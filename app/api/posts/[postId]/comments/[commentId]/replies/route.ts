@@ -30,13 +30,13 @@ export async function POST(
     }
 
     const userId = decodedToken.uid;
-    
+
     // Await params before accessing them
     const { postId, commentId } = await params;
-    
+
     // Get reply content from request body
     const { content } = await req.json();
-    
+
     if (!content || content.trim() === '') {
       return NextResponse.json({ error: 'Yanıt içeriği boş olamaz' }, { status: 400 });
     }
@@ -57,13 +57,16 @@ export async function POST(
       .doc(postId)
       .collection('comments')
       .doc(commentId);
-    
+
     const parentCommentDoc = await parentCommentRef.get();
     if (!parentCommentDoc.exists) {
       return NextResponse.json({ error: 'Ana yorum bulunamadı' }, { status: 404 });
     }
 
     const parentCommentData = parentCommentDoc.data();
+
+    // Get the main comment ID (if this is a reply to a reply, use the original parent)
+    const mainCommentId = parentCommentData?.parentId || commentId;
 
     // Get user data
     const userDoc = await adminDb.collection('users').doc(userId).get();
@@ -73,7 +76,7 @@ export async function POST(
     const replyData = {
       userId,
       content: content.trim(),
-      parentId: commentId,
+      parentId: mainCommentId, // Always use the main comment ID
       likeCount: 0,
       createdAt: FieldValue.serverTimestamp()
     };
@@ -85,10 +88,23 @@ export async function POST(
       .collection('comments')
       .add(replyData);
 
-    // Update parent comment reply count
-    await parentCommentRef.update({
-      replyCount: FieldValue.increment(1)
-    });
+    // Update main comment reply count (not the reply we're replying to)
+    if (mainCommentId !== commentId) {
+      // If replying to a reply, update the main comment's reply count
+      await adminDb
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .doc(mainCommentId)
+        .update({
+          replyCount: FieldValue.increment(1)
+        });
+    } else {
+      // If replying to main comment, update its reply count
+      await parentCommentRef.update({
+        replyCount: FieldValue.increment(1)
+      });
+    }
 
     // Update post comment count (replies count as comments too)
     await adminDb.collection('posts').doc(postId).update({
@@ -110,21 +126,51 @@ export async function POST(
       });
     }
 
+    // Create notifications for @mentioned users
+    const taggedUsernames = new Set(content.match(/@([\p{L}\p{N}_\s]+?)(?=[\s.,!?]|$)/gu)?.map((u) => u.substring(1).trim()) || []);
+    if (taggedUsernames.size > 0) {
+      for (const username of taggedUsernames) {
+        const userQuery = await adminDb.collection('users').where('displayName', '==', username).limit(1).get();
+        if (!userQuery.empty) {
+          const taggedUserDoc = userQuery.docs[0];
+          const taggedUserId = taggedUserDoc.id;
+
+          // Don't notify the user who is writing the reply or the parent comment owner (already notified)
+          if (taggedUserId !== userId && taggedUserId !== parentCommentData?.userId) {
+            await adminDb.collection('notifications').add({
+              userId: taggedUserId,
+              type: 'comment_mention',
+              title: 'Bir yanıtta sizden bahsedildi',
+              message: `${userData?.displayName || 'Bir kullanıcı'} bir yanıtta sizden bahsetti: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"`,
+              postId: postId,
+              commentId: replyRef.id, // Link to the reply itself
+              fromUserId: userId,
+              fromUserName: userData?.displayName || 'Bir kullanıcı',
+              fromUserPhotoURL: userData?.photoURL ?? undefined,
+              read: false,
+              createdAt: FieldValue.serverTimestamp()
+            });
+          }
+        }
+      }
+    }
+
+
     // Return the created reply
     const newReply: Comment = {
       id: replyRef.id,
       postId: postId,
       userId,
       userName: userData?.displayName || 'Anonim Kullanıcı',
-      userPhotoURL: userData?.photoURL || null,
+      userPhotoURL: userData?.photoURL ?? undefined,
       content: content.trim(),
-      parentId: commentId,
+      parentId: mainCommentId,
       likeCount: 0,
       replyCount: 0,
       createdAt: new Date()
     };
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       reply: newReply
     }, { status: 201 });
@@ -143,7 +189,7 @@ export async function GET(
   try {
     // Await params before accessing them
     const { postId, commentId } = await params;
-    
+
     // Get query parameters for pagination
     const { searchParams } = new URL(req.url);
     const limitParam = searchParams.get('limit') || '5';
@@ -161,7 +207,7 @@ export async function GET(
       .collection('comments')
       .doc(commentId)
       .get();
-    
+
     if (!parentCommentDoc.exists) {
       return NextResponse.json({ error: 'Ana yorum bulunamadı' }, { status: 404 });
     }
@@ -181,18 +227,18 @@ export async function GET(
     // Fetch replies with user data
     for (const replyDoc of repliesSnapshot.docs) {
       const replyData = replyDoc.data();
-      
+
       try {
         // Get user data for each reply
         const userDoc = await adminDb.collection('users').doc(replyData.userId).get();
         const userData = userDoc.data();
-        
+
         replies.push({
           id: replyDoc.id,
           postId: postId,
           userId: replyData.userId,
           userName: userData?.displayName || 'Anonim Kullanıcı',
-          userPhotoURL: userData?.photoURL || null,
+          userPhotoURL: userData?.photoURL ?? undefined,
           content: replyData.content,
           parentId: replyData.parentId,
           likeCount: replyData.likeCount || 0,
@@ -207,7 +253,7 @@ export async function GET(
           postId: postId,
           userId: replyData.userId,
           userName: 'Anonim Kullanıcı',
-          userPhotoURL: null,
+          userPhotoURL: undefined,
           content: replyData.content,
           parentId: replyData.parentId,
           likeCount: replyData.likeCount || 0,

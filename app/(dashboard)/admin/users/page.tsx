@@ -140,6 +140,23 @@ export default function AdminUsersPage() {
             router.push('/');
             return;
         }
+
+        const fetchUsersData = async () => {
+            setIsLoading(true);
+            try {
+                const response = await fetch(`/api/admin/users?userId=${user?.uid}`);
+                if (!response.ok) throw new Error('Kullanıcı verileri alınamadı.');
+                const data = await response.json();
+                setUsers(data.users);
+                setStats(data.stats);
+} catch (e: unknown) {
+            const error = e as { message: string };
+                toast.error(error.message);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
         fetchUsersData();
     }, [user, loading, router]);
 
@@ -164,7 +181,7 @@ export default function AdminUsersPage() {
             const data = await response.json();
             setUsers(data.users);
             setStats(data.stats);
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast.error(error.message);
         } finally {
             setIsLoading(false);
@@ -199,7 +216,7 @@ export default function AdminUsersPage() {
             toast.success(result.message || 'İşlem başarıyla tamamlandı.');
             fetchUsersData(); // Listeyi yenile
             setOpenDropdownId(null); // Dropdown'ı kapat
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast.error(error.message);
         }
     };

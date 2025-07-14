@@ -7,6 +7,7 @@ import { db } from '@/app/lib/firebase'; // Adjust the path as necessary
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/app/lib/auth-context';
 import { useTheme } from 'next-themes';
+import Image from 'next/image';
 import {
   Home,
   User,
@@ -205,9 +206,11 @@ export default function MainSidebar() {
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                 {user.photoURL ? (
-                  <img
+                  <Image
                     src={user.photoURL}
                     alt={user.displayName || 'Profil'}
+                    width={40}
+                    height={40}
                     className="w-10 h-10 rounded-full object-cover"
                   />
                 ) : (
@@ -234,8 +237,8 @@ export default function MainSidebar() {
                 <Link
                   href={item.href}
                   className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors group ${isActive(item.href)
-                      ? 'bg-[var(--primary)] text-white'
-                      : 'text-[var(--muted)] hover:bg-[var(--card-hover)] hover:text-[var(--foreground)]'
+                    ? 'bg-[var(--primary)] text-white'
+                    : 'text-[var(--muted)] hover:bg-[var(--card-hover)] hover:text-[var(--foreground)]'
                     }`}
                   title={item.name}
                 >

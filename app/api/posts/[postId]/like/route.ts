@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, adminAuth } from '@/app/lib/firebase-admin';
+import { adminDb } from '@/app/lib/firebase-admin';
 import { verifyAuth } from '@/app/lib/auth';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -31,7 +31,16 @@ export async function POST(
       return NextResponse.json({ error: 'Post not found' }, { status: 404 });
     }
 
-    const postData = postDoc.data();
+const postData = postDoc.data();
+
+    if (!postData) {
+      return NextResponse.json({ error: 'Post data is missing' }, { status: 404 });
+    }
+
+    // Ensure likes count is a number
+    if (typeof postData.likes !== 'number') {
+        postData.likes = 0;
+    }
 
     // Check if user already liked
     const userLikeRef = adminDb
@@ -54,9 +63,13 @@ export async function POST(
         likedPosts: FieldValue.arrayRemove(postId)
       });
 
+      // Get updated post data
+      const updatedPostDoc = await postRef.get();
+      const updatedPostData = updatedPostDoc.data();
+
       return NextResponse.json({ 
         liked: false, 
-        likes: (postData?.likes || 1) - 1 
+        likes: updatedPostData?.likes || 0 
       });
     } else {
       // Like
@@ -91,9 +104,13 @@ export async function POST(
         });
       }
 
+      // Get updated post data
+      const updatedPostDoc = await postRef.get();
+      const updatedPostData = updatedPostDoc.data();
+
       return NextResponse.json({ 
         liked: true, 
-        likes: (postData?.likes || 0) + 1 
+        likes: updatedPostData?.likes || 0 
       });
     }
   } catch (error) {

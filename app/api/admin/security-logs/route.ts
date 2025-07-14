@@ -134,7 +134,7 @@ async function scanForVulnerabilities(): Promise<SecurityVulnerability[]> {
                     patternList.forEach(pattern => {
                         const matches = currentLine.match(pattern);
                         if (matches) {
-                            const severity = getSeverity(type as keyof typeof patterns, currentLine);
+                            const severity = getSeverity(type as keyof typeof patterns);
                             vulnerabilities.push({
                                 type: type as SecurityVulnerability['type'],
                                 severity,
@@ -154,7 +154,7 @@ async function scanForVulnerabilities(): Promise<SecurityVulnerability[]> {
     };
     
     // Güvenlik açığı şiddeti belirleme
-    const getSeverity = (type: keyof typeof patterns, line: string): SecurityVulnerability['severity'] => {
+    const getSeverity = (type: keyof typeof patterns): SecurityVulnerability['severity'] => {
         switch (type) {
             case 'sql_injection':
             case 'code_injection':

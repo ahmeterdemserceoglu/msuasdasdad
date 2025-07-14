@@ -1,10 +1,11 @@
 'use client';
 
 import { Send, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/lib/auth-context';
 import { toast } from 'react-hot-toast';
 import { Comment } from '@/app/types';
+import Image from 'next/image';
 
 interface ReplyFormProps {
   postId: string;
@@ -14,20 +15,27 @@ interface ReplyFormProps {
   replyingTo?: string; // Name of person being replied to
 }
 
-export default function ReplyForm({ 
-  postId, 
-  parentCommentId, 
-  onReplyAdded, 
-  onCancel, 
-  replyingTo 
+export default function ReplyForm({
+  postId,
+  parentCommentId,
+  onReplyAdded,
+  onCancel,
+  replyingTo
 }: ReplyFormProps) {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { firebaseUser, userData } = useAuth();
+  const { firebaseUser, user } = useAuth();
+
+  useEffect(() => {
+    if (replyingTo && user?.displayName !== replyingTo) {
+      setContent(`@${replyingTo} `);
+    }
+  }, [replyingTo, user?.displayName]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!firebaseUser) {
       toast.error('Yanıtlamak için giriş yapmalısınız');
       return;
@@ -62,7 +70,7 @@ export default function ReplyForm({
       }
 
       const result = await response.json();
-      
+
       if (result.success && result.reply) {
         toast.success('Yanıt başarıyla eklendi');
         setContent('');
@@ -94,26 +102,22 @@ export default function ReplyForm({
       <div className="flex items-start space-x-3">
         {/* User Avatar */}
         <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white flex-shrink-0">
-          {userData?.photoURL ? (
-            <img 
-              src={userData.photoURL} 
-              alt={userData.displayName} 
-              className="w-6 h-6 rounded-full object-cover" 
+          {user?.photoURL ? (
+            <Image
+              src={user.photoURL}
+              alt={user.displayName || ''}
+              width={24}
+              height={24}
+              className="w-6 h-6 rounded-full object-cover"
             />
           ) : (
             <span className="font-semibold text-xs">
-              {userData?.displayName?.charAt(0).toUpperCase() || 'U'}
+              {user?.displayName?.charAt(0).toUpperCase() || 'U'}
             </span>
           )}
         </div>
 
         <div className="flex-1">
-          {replyingTo && (
-            <p className="text-xs text-[var(--muted)] mb-2">
-              <span className="text-[var(--primary)]">@{replyingTo}</span> kullanıcısına yanıt veriyorsunuz
-            </p>
-          )}
-          
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -123,12 +127,12 @@ export default function ReplyForm({
             maxLength={500}
             disabled={isSubmitting}
           />
-          
+
           <div className="flex justify-between items-center mt-2">
             <span className="text-xs text-[var(--muted)]">
               {content.length}/500 karakter
             </span>
-            
+
             <div className="flex items-center space-x-2">
               <button
                 type="button"
@@ -138,7 +142,7 @@ export default function ReplyForm({
                 <X size={12} />
                 <span>İptal</span>
               </button>
-              
+
               <button
                 type="submit"
                 disabled={isSubmitting || !content.trim()}

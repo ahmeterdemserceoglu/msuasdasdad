@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { adminDb } from '@/app/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -96,7 +96,7 @@ export async function POST() {
         for (const post of samplePosts) {
             const docRef = await adminDb.collection('posts').add(post);
             postIds.push(docRef.id);
-            
+
             // User alt koleksiyonuna da ekle
             await adminDb.collection('users').doc(post.userId).collection('posts').add({
                 ...post,
@@ -104,9 +104,9 @@ export async function POST() {
             });
         }
 
-        return new NextResponse(JSON.stringify({ 
+        return new NextResponse(JSON.stringify({
             message: 'Sample posts created successfully',
-            postIds 
+            postIds
         }), { status: 200 });
 
     } catch (error) {

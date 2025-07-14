@@ -17,7 +17,7 @@ export function useAdminNotifications() {
 
     const fetchNotifications = useCallback(async () => {
         if (!user?.isAdmin) return;
-        
+
         setLoading(true);
         try {
             const response = await fetch(`/api/admin/notifications?userId=${user.uid}`);
@@ -31,13 +31,13 @@ export function useAdminNotifications() {
         } finally {
             setLoading(false);
         }
-    }, [user?.isAdmin]);
+    }, [user?.isAdmin, user?.uid]);
 
     useEffect(() => {
         if (user?.isAdmin) {
             fetchNotifications();
             // Her 30 saniyede bir bildirimları güncelle
-            const interval = setInterval(fetchNotifications, 30000);
+            const interval = setInterval(fetchNotifications, 10000);
             return () => clearInterval(interval);
         }
     }, [user?.isAdmin, fetchNotifications]);

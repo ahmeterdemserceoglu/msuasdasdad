@@ -123,7 +123,7 @@ export default function PostPage() {
       <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-2">Geçersiz Post ID</h2>
-          <p className="text-[var(--muted)]">Post ID'si bulunamadı.</p>
+          <p className="text-[var(--muted)]">Post ID&apos;si bulunamadı.</p>
         </div>
       </div>
     );

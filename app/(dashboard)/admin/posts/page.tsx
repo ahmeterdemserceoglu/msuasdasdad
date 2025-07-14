@@ -42,8 +42,14 @@ interface PostStats {
     rejected: number;
 }
 
+interface DropdownMenuProps {
+    post: Post;
+    onAction: (action: 'approve' | 'reject' | 'delete') => void;
+    onView: () => void;
+}
+
 // Dropdown Menu Component
-const DropdownMenu = ({ post, onAction, onView }) => {
+const DropdownMenu = ({ post, onAction, onView }: DropdownMenuProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
@@ -68,26 +74,26 @@ const DropdownMenu = ({ post, onAction, onView }) => {
             const buttonRect = buttonRef.current.getBoundingClientRect();
             const dropdownHeight = 250; // Approximate height of dropdown
             const dropdownWidth = 192; // 48 * 4 (w-48 in tailwind)
-            
+
             let top = buttonRect.bottom + 8; // 8px gap
             let left = buttonRect.right - dropdownWidth;
-            
+
             // Check if dropdown would go off screen bottom
             if (top + dropdownHeight > window.innerHeight) {
                 // Position above the button
                 top = buttonRect.top - dropdownHeight - 8;
             }
-            
+
             // Check if dropdown would go off screen left
             if (left < 0) {
                 left = 8; // 8px from edge
             }
-            
+
             // Check if dropdown would go off screen right
             if (left + dropdownWidth > window.innerWidth) {
                 left = window.innerWidth - dropdownWidth - 8;
             }
-            
+
             setDropdownPosition({ top, left });
         }
     }, [isOpen]);
@@ -101,7 +107,7 @@ const DropdownMenu = ({ post, onAction, onView }) => {
             >
                 <MoreVertical className="h-5 w-5" />
             </button>
-            
+
             {isOpen && dropdownPosition && createPortal(
                 <div
                     ref={dropdownRef}
@@ -122,7 +128,7 @@ const DropdownMenu = ({ post, onAction, onView }) => {
                             <Eye className="mr-3 h-5 w-5" />
                             Detayları Gör
                         </button>
-                        
+
                         {post.status !== 'approved' && (
                             <button
                                 onClick={() => {
@@ -135,7 +141,7 @@ const DropdownMenu = ({ post, onAction, onView }) => {
                                 Onayla
                             </button>
                         )}
-                        
+
                         {post.status !== 'rejected' && (
                             <button
                                 onClick={() => {
@@ -168,8 +174,15 @@ const DropdownMenu = ({ post, onAction, onView }) => {
     );
 };
 
+interface StatCardProps {
+    title: string;
+    value: number;
+    icon: React.ReactNode;
+    colorClass: string;
+}
+
 // Yardımcı Fonksiyonlar ve Bileşenler
-const StatCard = ({ title, value, icon, colorClass }) => (
+const StatCard = ({ title, value, icon, colorClass }: StatCardProps) => (
     <Card className="bg-gray-800/50 p-4 border border-gray-700/50">
         <div className="flex items-center">
             <div className={`p-2 bg-${colorClass}-500/20 rounded-lg mr-4`}>
@@ -183,7 +196,11 @@ const StatCard = ({ title, value, icon, colorClass }) => (
     </Card>
 );
 
-const StatusBadge = ({ status }) => {
+interface StatusBadgeProps {
+    status: 'approved' | 'pending' | 'rejected';
+}
+
+const StatusBadge = ({ status }: StatusBadgeProps) => {
     const statusStyles = {
         approved: 'bg-green-900/50 text-green-300 border-green-500/30',
         pending: 'bg-yellow-900/50 text-yellow-300 border-yellow-500/30',
@@ -226,27 +243,31 @@ export default function AdminPostsPage() {
             if (!firebaseUser) {
                 throw new Error('Kullanıcı oturumu bulunamadı.');
             }
-            
+
             const token = await firebaseUser.getIdToken();
-            const response = await fetch('/api/posts/admin', { 
+            const response = await fetch('/api/posts/admin', {
                 method: 'GET',
-                headers: { 
+                headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Gönderiler alınamadı.');
             }
-            
+
             const data = await response.json();
             setPosts(data.posts || []);
             setStats(data.stats || { total: 0, pending: 0, approved: 0, rejected: 0 });
-        } catch (error: Error) {
-            console.error('Fetch posts error:', error);
-            toast.error(error.message);
+        } catch (error) {
+            if (error instanceof Error) {
+                console.error('Fetch posts error:', error);
+                toast.error(error.message);
+            } else {
+                toast.error("An unknown error occurred while fetching posts.");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -276,18 +297,22 @@ export default function AdminPostsPage() {
             if (!response.ok) throw new Error(`İşlem başarısız: ${action}`);
             toast.success(`Gönderi başarıyla ${action === 'approve' ? 'onaylandı' : action === 'reject' ? 'reddedildi' : 'silindi'}.`);
             fetchPosts();
-        } catch (error: Error) {
-            toast.error(error.message);
+        } catch (error) {
+            if (error instanceof Error) {
+                toast.error(error.message);
+            } else {
+                toast.error("An unknown error occurred during the post action.");
+            }
         }
     };
-    
+
     const filteredPosts = posts.filter(post => {
         const searchLower = searchTerm.toLowerCase();
         return (
             (post.title.toLowerCase().includes(searchLower) ||
-             post.content.toLowerCase().includes(searchLower) ||
-             post.displayName?.toLowerCase().includes(searchLower) ||
-             post.userEmail?.toLowerCase().includes(searchLower)) &&
+                post.content.toLowerCase().includes(searchLower) ||
+                post.displayName?.toLowerCase().includes(searchLower) ||
+                post.userEmail?.toLowerCase().includes(searchLower)) &&
             (!filterStatus || post.status === filterStatus) &&
             (!filterCategory || post.category === filterCategory)
         );
@@ -297,7 +322,7 @@ export default function AdminPostsPage() {
         setSelectedPost(post);
         setIsModalOpen(true);
     };
-    
+
     if (loading || isLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
@@ -315,10 +340,10 @@ export default function AdminPostsPage() {
 
             {stats && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-                    <StatCard title="Toplam Gönderi" value={stats.total} icon={<FileText className="h-6 w-6 text-blue-400"/>} colorClass="blue" />
-                    <StatCard title="Bekleyen" value={stats.pending} icon={<Clock className="h-6 w-6 text-yellow-400"/>} colorClass="yellow" />
-                    <StatCard title="Onaylanan" value={stats.approved} icon={<CheckCircle className="h-6 w-6 text-green-400"/>} colorClass="green" />
-                    <StatCard title="Reddedilen" value={stats.rejected} icon={<XCircle className="h-6 w-6 text-red-400"/>} colorClass="red" />
+                    <StatCard title="Toplam Gönderi" value={stats.total} icon={<FileText className="h-6 w-6 text-blue-400" />} colorClass="blue" />
+                    <StatCard title="Bekleyen" value={stats.pending} icon={<Clock className="h-6 w-6 text-yellow-400" />} colorClass="yellow" />
+                    <StatCard title="Onaylanan" value={stats.approved} icon={<CheckCircle className="h-6 w-6 text-green-400" />} colorClass="green" />
+                    <StatCard title="Reddedilen" value={stats.rejected} icon={<XCircle className="h-6 w-6 text-red-400" />} colorClass="red" />
                 </div>
             )}
 
@@ -336,7 +361,7 @@ export default function AdminPostsPage() {
                             />
                         </div>
                         <div className="flex items-center gap-4 w-full md:w-auto">
-                             <Select
+                            <Select
                                 value={filterStatus}
                                 onChange={(e) => setFilterStatus(e.target.value)}
                                 options={[
@@ -347,7 +372,7 @@ export default function AdminPostsPage() {
                                 ]}
                                 className="w-full md:w-48 bg-gray-900/50 border-gray-600/80 text-white"
                             />
-                           <Select
+                            <Select
                                 value={filterCategory}
                                 onChange={(e) => setFilterCategory(e.target.value)}
                                 options={[
@@ -388,16 +413,16 @@ export default function AdminPostsPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-4 text-gray-400">
-                                                <span className="flex items-center gap-1"><Heart className="h-4 w-4"/> {post.likes}</span>
-                                                <span className="flex items-center gap-1"><MessageSquare className="h-4 w-4"/> {post.commentsCount}</span>
-                                                <span className="flex items-center gap-1"><Eye className="h-4 w-4"/> {post.views || 0}</span>
+                                                <span className="flex items-center gap-1"><Heart className="h-4 w-4" /> {post.likes}</span>
+                                                <span className="flex items-center gap-1"><MessageSquare className="h-4 w-4" /> {post.commentsCount}</span>
+                                                <span className="flex items-center gap-1"><Eye className="h-4 w-4" /> {post.views || 0}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <StatusBadge status={post.status} />
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <DropdownMenu 
+                                            <DropdownMenu
                                                 post={post}
                                                 onAction={(action) => handlePostAction(post.id, action)}
                                                 onView={() => openPostModal(post)}
@@ -406,7 +431,7 @@ export default function AdminPostsPage() {
                                     </tr>
                                 ))}
                                 {filteredPosts.length === 0 && (
-                                     <tr>
+                                    <tr>
                                         <td colSpan={5} className="text-center py-12">
                                             <div className="flex flex-col items-center justify-center text-gray-500">
                                                 <AlertTriangle className="h-12 w-12 mb-4" />
@@ -424,7 +449,7 @@ export default function AdminPostsPage() {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} size="2xl">
                 {selectedPost && (
-                     <div className="bg-gray-800 text-white rounded-lg">
+                    <div className="bg-gray-800 text-white rounded-lg">
                         <ModalHeader className="border-b border-gray-700">
                             <ModalTitle>{selectedPost.title}</ModalTitle>
                         </ModalHeader>
@@ -433,17 +458,17 @@ export default function AdminPostsPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-gray-700 pt-6">
                                 <div className="space-y-4">
                                     <h4 className="font-semibold text-lg text-military-beige">Gönderi Bilgileri</h4>
-                                    <div className="flex items-center"><User className="h-5 w-5 mr-3 text-gray-400"/> <span>{selectedPost.displayName || 'Bilinmeyen Kullanıcı'} ({selectedPost.userEmail})</span></div>
-                                    <div className="flex items-center"><Calendar className="h-5 w-5 mr-3 text-gray-400"/> <span>{new Date(selectedPost.createdAt).toLocaleString('tr-TR')}</span></div>
-                                    <div className="flex items-center"><MapPin className="h-5 w-5 mr-3 text-gray-400"/> <span>{selectedPost.city || 'Şehir Belirtilmemiş'}</span></div>
-                                    <div className="flex items-center"><Tag className="h-5 w-5 mr-3 text-gray-400"/> <span>{selectedPost.category || 'Kategori Yok'}</span></div>
+                                    <div className="flex items-center"><User className="h-5 w-5 mr-3 text-gray-400" /> <span>{selectedPost.displayName || 'Bilinmeyen Kullanıcı'} ({selectedPost.userEmail})</span></div>
+                                    <div className="flex items-center"><Calendar className="h-5 w-5 mr-3 text-gray-400" /> <span>{new Date(selectedPost.createdAt).toLocaleString('tr-TR')}</span></div>
+                                    <div className="flex items-center"><MapPin className="h-5 w-5 mr-3 text-gray-400" /> <span>{selectedPost.city || 'Şehir Belirtilmemiş'}</span></div>
+                                    <div className="flex items-center"><Tag className="h-5 w-5 mr-3 text-gray-400" /> <span>{selectedPost.category || 'Kategori Yok'}</span></div>
                                 </div>
                                 <div className="space-y-4">
-                                     <h4 className="font-semibold text-lg text-military-beige">Etkileşim</h4>
-                                     <div className="flex items-center"><Heart className="h-5 w-5 mr-3 text-gray-400"/> <span>{selectedPost.likes} Beğeni</span></div>
-                                     <div className="flex items-center"><MessageSquare className="h-5 w-5 mr-3 text-gray-400"/> <span>{selectedPost.commentsCount} Yorum</span></div>
-                                     <div className="flex items-center"><Eye className="h-5 w-5 mr-3 text-gray-400"/> <span>{selectedPost.views || 0} Görüntülenme</span></div>
-                                     <div className="flex items-center text-yellow-400"><AlertTriangle className="h-5 w-5 mr-3"/> <span>{selectedPost.reportCount || 0} Rapor</span></div>
+                                    <h4 className="font-semibold text-lg text-military-beige">Etkileşim</h4>
+                                    <div className="flex items-center"><Heart className="h-5 w-5 mr-3 text-gray-400" /> <span>{selectedPost.likes} Beğeni</span></div>
+                                    <div className="flex items-center"><MessageSquare className="h-5 w-5 mr-3 text-gray-400" /> <span>{selectedPost.commentsCount} Yorum</span></div>
+                                    <div className="flex items-center"><Eye className="h-5 w-5 mr-3 text-gray-400" /> <span>{selectedPost.views || 0} Görüntülenme</span></div>
+                                    <div className="flex items-center text-yellow-400"><AlertTriangle className="h-5 w-5 mr-3" /> <span>{selectedPost.reportCount || 0} Rapor</span></div>
                                 </div>
                             </div>
                         </ModalBody>

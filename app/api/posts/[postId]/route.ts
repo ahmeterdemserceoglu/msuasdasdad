@@ -11,20 +11,20 @@ export async function GET(
 
     // Get the post
     const postDoc = await adminDb.collection('posts').doc(postId).get();
-    
+
     if (!postDoc.exists) {
       return NextResponse.json({ error: 'Post bulunamadı' }, { status: 404 });
     }
 
     const postData = postDoc.data();
-    
+
     // Get user data
     let userData = null;
     try {
       const userDoc = await adminDb.collection('users').doc(postData?.userId).get();
       userData = userDoc.data();
-    } catch (error: Error) {
-      console.error('Error fetching user data:', error);
+    } catch (err: unknown) {
+      console.error('Error fetching user data:', err);
     }
 
     // Get comment count
@@ -43,6 +43,11 @@ export async function GET(
       .get();
     const likeCount = likesSnapshot.size;
 
+    // Self-healing: a Likes count is different from the real number of likes
+    if (postData?.likes !== likeCount) {
+        await adminDb.collection('posts').doc(postId).update({ likes: likeCount });
+    }
+
     const post = {
       id: postDoc.id,
       ...postData,
@@ -55,7 +60,7 @@ export async function GET(
     };
 
     return NextResponse.json({ post });
-  } catch (error: Error) {
+  } catch {
     return NextResponse.json({ error: 'Post alınırken hata oluştu' }, { status: 500 });
   }
 }
@@ -83,7 +88,7 @@ export async function PUT(
     let decodedToken;
     try {
       decodedToken = await adminAuth.verifyIdToken(token);
-    } catch (error: Error) {
+    } catch {
       return NextResponse.json({ error: 'Geçersiz token' }, { status: 401 });
     }
 
@@ -91,13 +96,13 @@ export async function PUT(
 
     // Check if post exists
     const postDoc = await adminDb.collection('posts').doc(postId).get();
-    
+
     if (!postDoc.exists) {
       return NextResponse.json({ error: 'Post bulunamadı' }, { status: 404 });
     }
 
     const postData = postDoc.data();
-    
+
     // Check if user is the owner or admin
     const userDoc = await adminDb.collection('users').doc(userId).get();
     const userData = userDoc.data();
@@ -127,7 +132,7 @@ export async function PUT(
     }
 
     // Prepare update data
-    const updateData: any = {
+    const updateData: Record<string, string | string[] | FieldValue> = {
       title: title.trim(),
       content: content.trim(),
       summary: summary?.trim() || '',
@@ -151,8 +156,8 @@ export async function PUT(
     try {
       const userDoc = await adminDb.collection('users').doc(updatedPostData?.userId).get();
       postUserData = userDoc.data();
-    } catch (error: Error) {
-      console.error('Error fetching user data:', error);
+    } catch (err: unknown) {
+      console.error('Error fetching user data:', err);
     }
 
     // Get comment count
@@ -184,13 +189,13 @@ export async function PUT(
     };
 
     // Return updated post data
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'Post başarıyla güncellendi',
       post: updatedPost
     });
 
-  } catch (error: Error) {
+  } catch (error: unknown) {
     console.error('Error updating post:', error);
     return NextResponse.json({ error: 'Post güncellenirken hata oluştu' }, { status: 500 });
   }
@@ -218,7 +223,7 @@ export async function DELETE(
     let decodedToken;
     try {
       decodedToken = await adminAuth.verifyIdToken(token);
-    } catch (error: Error) {
+    } catch {
       return NextResponse.json({ error: 'Geçersiz token' }, { status: 401 });
     }
 
@@ -226,13 +231,13 @@ export async function DELETE(
 
     // Check if post exists
     const postDoc = await adminDb.collection('posts').doc(postId).get();
-    
+
     if (!postDoc.exists) {
       return NextResponse.json({ error: 'Post bulunamadı' }, { status: 404 });
     }
 
     const postData = postDoc.data();
-    
+
     // Check if user is the owner or admin
     const userDoc = await adminDb.collection('users').doc(userId).get();
     const userData = userDoc.data();
@@ -249,12 +254,12 @@ export async function DELETE(
       .doc(postId)
       .collection('likes')
       .get();
-    
-    const likeBatch = adminDb.batch();
-    likesSnapshot.docs.forEach(doc => {
-      likeBatch.delete(doc.ref);
+
+    const batch = adminDb.batch();
+    likesSnapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
     });
-    await likeBatch.commit();
+    await batch.commit();
 
     // Delete comments subcollection
     const commentsSnapshot = await adminDb
@@ -262,23 +267,20 @@ export async function DELETE(
       .doc(postId)
       .collection('comments')
       .get();
-    
+
     const commentBatch = adminDb.batch();
     commentsSnapshot.docs.forEach(doc => {
       commentBatch.delete(doc.ref);
     });
     await commentBatch.commit();
 
-    // Delete the post itself
+    // Delete post document
     await adminDb.collection('posts').doc(postId).delete();
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Post ve ilişkili veriler başarıyla silindi' 
-    });
+    return NextResponse.json({ success: true, message: 'Post başarıyla silindi' });
 
-  } catch (error: Error) {
-    console.error('Error deleting post:', error);
+  } catch (err: unknown) {
+    console.error('Error deleting post:', err);
     return NextResponse.json({ error: 'Post silinirken hata oluştu' }, { status: 500 });
   }
 }
@@ -307,13 +309,13 @@ export async function OPTIONS(
 
       // Check if post exists and user has access
       const postDoc = await adminDb.collection('posts').doc(postId).get();
-      
+
       if (!postDoc.exists) {
         return NextResponse.json({ canView: false, error: 'Post bulunamadı' }, { status: 404 });
       }
 
       const postData = postDoc.data();
-      
+
       // Check if post is approved or if user is the owner or admin
       const userDoc = await adminDb.collection('users').doc(userId).get();
       const userData = userDoc.data();
@@ -323,10 +325,10 @@ export async function OPTIONS(
       const canView = postData?.status === 'approved' || isOwner || isAdmin;
 
       return NextResponse.json({ canView, isOwner, isAdmin });
-    } catch (error: Error) {
+    } catch {
       return NextResponse.json({ canView: true }); // Default to public access
     }
-  } catch (error: Error) {
+  } catch (error: unknown) {
     console.error('Error checking post access:', error);
     return NextResponse.json({ canView: false }, { status: 500 });
   }

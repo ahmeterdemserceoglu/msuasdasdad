@@ -41,7 +41,8 @@ export default function ForgotPasswordPage() {
       await resetPassword(email);
       setEmailSent(true);
       toast.success('Şifre sıfırlama bağlantısı başarıyla gönderildi!');
-    } catch (error: Error) {
+} catch (e: unknown) {
+      const error = e as { code?: string; message: string };
       console.error('Password reset error:', error);
       
       // Firebase Auth hata kodlarına göre detaylı mesajlar

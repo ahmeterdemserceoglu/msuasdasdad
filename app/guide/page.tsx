@@ -45,7 +45,7 @@ export default function GuidePage() {
         <div className="text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">Başarıya Giden Yol</h2>
           <p className="text-md text-[var(--muted)] mt-2 max-w-2xl mx-auto">
-            Milli Savunma Üniversitesi'ne giden bu zorlu ama onurlu yolda, her adımı sağlam atmanız için bu rehberi hazırladık.
+            Milli Savunma Üniversitesi&apos;ne giden bu zorlu ama onurlu yolda, her adımı sağlam atmanız için bu rehberi hazırladık.
           </p>
         </div>
 
@@ -64,15 +64,15 @@ export default function GuidePage() {
         </div>
 
         <div className="card bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4">
-            <div className="flex items-start space-x-3">
-                <Info className="w-6 h-6 text-blue-500 flex-shrink-0 mt-1" />
-                <div>
-                    <h4 className="font-bold text-blue-800 dark:text-blue-300">Önemli Not</h4>
-                    <p className="text-sm text-blue-700 dark:text-blue-200 mt-1">
-                        Bu rehber genel bilgilendirme amaçlıdır. Başvuru ve seçim süreçleriyle ilgili en güncel ve doğru bilgi için her zaman Milli Savunma Üniversitesi (msu.edu.tr) ve MSB Personel Temin (personeltemin.msb.gov.tr) resmi web sitelerini takip ediniz.
-                    </p>
-                </div>
+          <div className="flex items-start space-x-3">
+            <Info className="w-6 h-6 text-blue-500 flex-shrink-0 mt-1" />
+            <div>
+              <h4 className="font-bold text-blue-800 dark:text-blue-300">Önemli Not</h4>
+              <p className="text-sm text-blue-700 dark:text-blue-200 mt-1">
+                Bu rehber genel bilgilendirme amaçlıdır. Başvuru ve seçim süreçleriyle ilgili en güncel ve doğru bilgi için her zaman Milli Savunma Üniversitesi (msu.edu.tr) ve MSB Personel Temin (personeltemin.msb.gov.tr) resmi web sitelerini takip ediniz.
+              </p>
             </div>
+          </div>
         </div>
       </div>
     </XLayout>

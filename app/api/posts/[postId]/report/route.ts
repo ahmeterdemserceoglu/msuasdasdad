@@ -16,13 +16,13 @@ export async function POST(
     }
 
     const token = authHeader.split('Bearer ')[1];
-    
+
     // Verify the user's token
     let userId: string;
     try {
       const decodedToken = await adminAuth.verifyIdToken(token);
       userId = decodedToken.uid;
-    } catch (e) {
+    } catch {
       return NextResponse.json(
         { error: 'Geçersiz token.' },
         { status: 401 }
@@ -81,7 +81,7 @@ export async function POST(
       reportId: reportRef.id
     });
 
-  } catch (e: Error) {
+  } catch (e: unknown) {
     console.error('Error reporting post:', e);
     return NextResponse.json(
       { error: 'Raporlama işlemi sırasında bir hata oluştu.' },

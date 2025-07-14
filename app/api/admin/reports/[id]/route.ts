@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, verifyAdmin } from '@/app/lib/firebase-admin';
 
+interface Report {
+  status: 'pending' | 'resolved' | 'dismissed';
+  updatedAt: Date;
+  adminNote?: string;
+  resolvedAt?: Date;
+}
+
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get token from headers
@@ -19,7 +26,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Bu işlem için admin yetkisi gerekli.' }, { status: 403 });
     }
     
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const { status, adminNote } = body;
     
@@ -80,7 +87,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get token from headers
@@ -96,7 +103,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Bu işlem için admin yetkisi gerekli.' }, { status: 403 });
     }
     
-    const { id } = params;
+    const { id } = await params;
     
     // Check if report exists
     const reportRef = adminDb.collection('reports').doc(id);
@@ -121,7 +128,7 @@ export async function DELETE(
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get token from headers
@@ -137,7 +144,7 @@ export async function GET(
       return NextResponse.json({ error: 'Bu işlem için admin yetkisi gerekli.' }, { status: 403 });
     }
     
-    const { id } = params;
+    const { id } = await params;
     
     // Get report data
     const reportDoc = await adminDb.collection('reports').doc(id).get();

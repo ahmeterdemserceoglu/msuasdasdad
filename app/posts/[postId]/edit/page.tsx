@@ -46,11 +46,12 @@ export default function EditPostPage() {
   const postId = params.postId as string;
   const { firebaseUser } = useAuth();
 
-  
+
+  const [, setPost] = useState<PostData | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Form fields
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -73,7 +74,7 @@ export default function EditPostPage() {
       try {
         setLoading(true);
         const token = await firebaseUser.getIdToken();
-        
+
         // First check permissions
         const permissionResponse = await fetch(`/api/posts/${postId}`, {
           method: 'OPTIONS',
@@ -88,7 +89,7 @@ export default function EditPostPage() {
         }
 
         const permissionData = await permissionResponse.json();
-        
+
         // Check if user is owner or admin
         if (!permissionData.isOwner && !permissionData.isAdmin) {
           setError('Bu postu düzenleme yetkiniz yok');
@@ -97,7 +98,7 @@ export default function EditPostPage() {
 
         // Fetch post data
         const response = await fetch(`/api/posts/${postId}`);
-        
+
         if (!response.ok) {
           if (response.status === 404) {
             setError('Post bulunamadı');
@@ -109,9 +110,9 @@ export default function EditPostPage() {
 
         const data = await response.json();
         const postData = data.post;
-        
+
         setPost(postData);
-        
+
         // Fill form with existing data
         setTitle(postData.title || '');
         setContent(postData.content || '');
@@ -120,15 +121,15 @@ export default function EditPostPage() {
         setCandidateType(postData.candidateType || 'subay');
         setCity(postData.city || '');
         setTags(postData.tags || []);
-        
+
         // Format date for input
         if (postData.experienceDate) {
           const date = new Date(postData.experienceDate);
           const formattedDate = date.toISOString().split('T')[0];
           setExperienceDate(formattedDate);
         }
-        
-      } catch (err) {
+
+      } catch (err: unknown) {
         console.error('Error fetching post:', err);
         setError('Post yüklenirken hata oluştu');
       } finally {
@@ -167,7 +168,7 @@ export default function EditPostPage() {
 
     try {
       const token = await firebaseUser.getIdToken();
-      
+
       const updateData = {
         title: title.trim(),
         content: content.trim(),
@@ -221,7 +222,7 @@ export default function EditPostPage() {
         <div className="text-center max-w-md">
           <h2 className="text-2xl font-bold mb-2">Hata</h2>
           <p className="text-[var(--muted)] mb-6">{error}</p>
-          <button 
+          <button
             onClick={() => router.push('/')}
             className="btn-primary"
           >
@@ -239,7 +240,7 @@ export default function EditPostPage() {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <button 
+              <button
                 onClick={() => router.back()}
                 className="p-2 hover:bg-[var(--card-hover)] rounded-full transition-colors"
               >
@@ -394,7 +395,7 @@ export default function EditPostPage() {
                 Ekle
               </button>
             </div>
-            
+
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {tags.map((tag, index) => (

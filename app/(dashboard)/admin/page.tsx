@@ -8,12 +8,7 @@ import Card from '@/app/components/ui/Card';
 import Button from '@/app/components/ui/Button';
 import Select from '@/app/components/ui/Select';
 import Modal, { ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/app/components/ui/Modal';
-import { 
-    Search,
-    Calendar,
-    Users,
-    Shield,
-    AlertCircle
+import {
 } from 'lucide-react';
 
 interface Post {
@@ -51,7 +46,6 @@ export default function AdminDashboardPage() {
     const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState('');
     const router = useRouter();
-    const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
 
     const fetchAdminData = useCallback(async () => {
         setIsLoading(true);
@@ -59,9 +53,9 @@ export default function AdminDashboardPage() {
             if (!firebaseUser) {
                 throw new Error('Kullanıcı oturumu bulunamadı.');
             }
-            
+
             const token = await firebaseUser.getIdToken();
-            
+
             // Gönderileri ve istatistikleri paralel olarak al
             const [postsResponse, statsResponse] = await Promise.all([
                 fetch(`/api/posts/admin?userId=${user?.uid}`, {
@@ -91,19 +85,24 @@ export default function AdminDashboardPage() {
                 toast.error("İstatistikler yüklenemedi.");
                 setStats(null);
             }
-        } catch (error: Error) {
-            toast.error(error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                toast.error(error.message);
+            } else {
+                toast.error("An unknown error occurred while fetching admin data.");
+            }
         } finally {
             setIsLoading(false);
         }
     }, [firebaseUser, user?.uid]);
 
     useEffect(() => {
+        const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
         const tabParam = searchParams.get('tab');
         if (tabParam && ['all', 'pending', 'approved', 'rejected'].includes(tabParam)) {
             setSelectedTab(tabParam);
         }
-    }, [searchParams]);
+    }, []);
 
     useEffect(() => {
         // Kullanıcı bilgisi yüklenmedişĩse bekle
@@ -115,7 +114,7 @@ export default function AdminDashboardPage() {
             router.push('/');
             return;
         }
-        
+
         // Firebase user yüklenmesini bekle
         if (firebaseUser) {
             fetchAdminData();
@@ -128,7 +127,7 @@ export default function AdminDashboardPage() {
             setRejectModalOpen(true);
             return;
         }
-        
+
         try {
             if (!firebaseUser) {
                 throw new Error('Kullanıcı oturumu bulunamadı.');
@@ -157,8 +156,12 @@ export default function AdminDashboardPage() {
 
             toast.success(`Gönderi ${actionTexts[action]}.`);
             fetchAdminData(); // Verileri yeniden yükle
-        } catch (error: Error) {
-            toast.error(error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                toast.error(error.message);
+            } else {
+                toast.error("An unknown error occurred during the post action.");
+            }
         }
     };
 
@@ -193,22 +196,26 @@ export default function AdminDashboardPage() {
             setSelectedPostId(null);
             setRejectReason('');
             fetchAdminData();
-        } catch (error: Error) {
-            toast.error(error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                toast.error(error.message);
+            } else {
+                toast.error("An unknown error occurred while rejecting the post.");
+            }
         }
     };
 
     const filteredPosts = posts.filter(post => {
-        const matchesSearch = !searchTerm || 
+        const matchesSearch = !searchTerm ||
             post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
             post.userEmail?.toLowerCase().includes(searchTerm.toLowerCase());
-        
+
         const matchesStatus = !filterStatus || post.status === filterStatus;
-        const matchesTab = selectedTab === 'all' || 
+        const matchesTab = selectedTab === 'all' ||
             (selectedTab === 'pending' && post.status === 'pending') ||
             (selectedTab === 'approved' && post.status === 'approved') ||
             (selectedTab === 'rejected' && post.status === 'rejected');
-        
+
         return matchesSearch && matchesStatus && matchesTab;
     });
 
@@ -240,7 +247,7 @@ export default function AdminDashboardPage() {
                         <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">{stats.totalPosts}</div>
                         <div className="text-sm text-blue-700 dark:text-blue-300 mt-1">Gönderi</div>
                     </div>
-                    
+
                     <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 p-6 rounded-xl border border-yellow-200 dark:border-yellow-800">
                         <div className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-2 uppercase tracking-wider">Onay Bekliyor</div>
                         <div className="text-3xl font-bold text-yellow-900 dark:text-yellow-100">{stats.pendingPosts}</div>
@@ -253,25 +260,25 @@ export default function AdminDashboardPage() {
                             </div>
                         )}
                     </div>
-                    
+
                     <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-6 rounded-xl border border-green-200 dark:border-green-800">
                         <div className="text-xs font-medium text-green-600 dark:text-green-400 mb-2 uppercase tracking-wider">Yayında</div>
                         <div className="text-3xl font-bold text-green-900 dark:text-green-100">{stats.approvedPosts}</div>
                         <div className="text-sm text-green-700 dark:text-green-300 mt-1">Onaylanan</div>
                     </div>
-                    
+
                     <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 p-6 rounded-xl border border-red-200 dark:border-red-800">
                         <div className="text-xs font-medium text-red-600 dark:text-red-400 mb-2 uppercase tracking-wider">İptal</div>
                         <div className="text-3xl font-bold text-red-900 dark:text-red-100">{stats.rejectedPosts}</div>
                         <div className="text-sm text-red-700 dark:text-red-300 mt-1">Reddedilen</div>
                     </div>
-                    
+
                     <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 p-6 rounded-xl border border-purple-200 dark:border-purple-800">
                         <div className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-2 uppercase tracking-wider">Aktif</div>
                         <div className="text-3xl font-bold text-purple-900 dark:text-purple-100">{stats.totalUsers}</div>
                         <div className="text-sm text-purple-700 dark:text-purple-300 mt-1">Kullanıcı</div>
                     </div>
-                    
+
                     <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 p-6 rounded-xl border border-indigo-200 dark:border-indigo-800">
                         <div className="text-xs font-medium text-indigo-600 dark:text-indigo-400 mb-2 uppercase tracking-wider">Bugün</div>
                         <div className="text-3xl font-bold text-indigo-900 dark:text-indigo-100">{stats.todayPosts}</div>
@@ -293,11 +300,10 @@ export default function AdminDashboardPage() {
                             <button
                                 key={tab.id}
                                 onClick={() => setSelectedTab(tab.id)}
-                                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                                    selectedTab === tab.id
+                                className={`py-2 px-1 border-b-2 font-medium text-sm ${selectedTab === tab.id
                                         ? 'border-blue-500 text-blue-600'
                                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                }`}
+                                    }`}
                             >
                                 {tab.label} ({tab.count})
                             </button>
@@ -375,17 +381,16 @@ export default function AdminDashboardPage() {
                                     )}
                                 </div>
                                 <div className="flex items-center gap-2 ml-4">
-                                    <span className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
-                                        post.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                                        post.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                    }`}>
+                                    <span className={`px-3 py-1.5 text-xs font-medium rounded-lg ${post.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                            post.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                                                'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                        }`}>
                                         {post.status === 'approved' ? 'Onaylandı' :
-                                         post.status === 'rejected' ? 'Reddedildi' : 'Bekliyor'}
+                                            post.status === 'rejected' ? 'Reddedildi' : 'Bekliyor'}
                                     </span>
                                 </div>
                             </div>
-                            
+
                             <div className="flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
                                 {post.status !== 'approved' && (
                                     <Button
@@ -410,14 +415,14 @@ export default function AdminDashboardPage() {
                                     Sil
                                 </Button>
                             </div>
-                            </Card>
+                        </Card>
                     ))
                 ) : (
                     <Card className="p-8 text-center">
                         <p className="text-gray-500 text-lg">Gösterilecek gönderi bulunamadı.</p>
                         {searchTerm && (
                             <p className="text-gray-400 mt-2">
-                                "{searchTerm}" araması için sonuç bulunamadı.
+                                &quot;{searchTerm}&quot; araması için sonuç bulunamadı.
                             </p>
                         )}
                     </Card>

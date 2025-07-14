@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { useState, useEffect, useCallback } from 'react';
 import Button from '@/app/components/ui/Button';
 import Input from '@/app/components/ui/Input';
 import Select, { SelectOption } from '@/app/components/ui/Select';
@@ -37,28 +38,29 @@ const CommunityAccountsPage = () => {
     { value: 'Website', label: 'Website' },
   ];
 
-  useEffect(() => {
-    const fetchAccounts = async () => {
-      if (!currentUser) return;
-      try {
-        const idToken = await currentUser.getIdToken();
-        const res = await fetch('/api/admin/community-accounts', {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setAccounts(data);
-        } else {
-          console.error('Failed to fetch accounts');
-        }
-      } catch (error) {
-        console.error('Error fetching accounts:', error);
+  const fetchAccounts = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const idToken = await currentUser.getIdToken();
+      const res = await fetch('/api/admin/community-accounts', {
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAccounts(data);
+      } else {
+        console.error('Failed to fetch accounts');
       }
-    };
-    fetchAccounts();
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+    }
   }, [currentUser]);
+
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -68,10 +70,10 @@ const CommunityAccountsPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     console.log('handleSubmit called!');
     e.preventDefault();
-    
+
     console.log('Current form state:', formState);
     console.log('Current user:', currentUser);
-    
+
     if (!currentUser) {
       console.error('No current user!');
       return;
@@ -95,8 +97,8 @@ const CommunityAccountsPage = () => {
 
       console.log('Submitting form with data:', body);
       const idToken = await currentUser.getIdToken();
-      
-      
+
+
       const res = await fetch(url, {
         method,
         headers: {
@@ -176,8 +178,8 @@ const CommunityAccountsPage = () => {
                 Manage social media accounts and community links
               </p>
             </div>
-            <Button 
-              onClick={openAddModal} 
+            <Button
+              onClick={openAddModal}
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -205,7 +207,7 @@ const CommunityAccountsPage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -221,7 +223,7 @@ const CommunityAccountsPage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -234,14 +236,14 @@ const CommunityAccountsPage = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Most Popular</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {accounts.length > 0 ? accounts.reduce((prev, current) => 
+                  {accounts.length > 0 ? accounts.reduce((prev, current) =>
                     (prev.type === 'Instagram' || prev.type === 'Telegram') ? prev : current
                   ).type : 'N/A'}
                 </p>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -275,7 +277,7 @@ const CommunityAccountsPage = () => {
             <p className="text-gray-500 dark:text-gray-400 mb-6">
               Get started by adding your first social media account or community link.
             </p>
-            <Button 
+            <Button
               onClick={openAddModal}
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors duration-200"
             >
@@ -293,9 +295,11 @@ const CommunityAccountsPage = () => {
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       {account.imageUrl ? (
-                        <img 
-                          src={account.imageUrl} 
-                          alt={account.name} 
+                        <Image
+                          src={account.imageUrl}
+                          alt={account.name}
+                          width={48}
+                          height={48}
                           className="w-12 h-12 object-cover rounded-lg"
                         />
                       ) : (
@@ -315,22 +319,22 @@ const CommunityAccountsPage = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="mb-4">
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">URL:</p>
-                    <a 
-                      href={account.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
+                    <a
+                      href={account.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm break-all hover:underline"
                     >
                       {account.url}
                     </a>
                   </div>
-                  
+
                   <div className="flex gap-2">
-                    <Button 
-                      onClick={() => handleEdit(account)} 
+                    <Button
+                      onClick={() => handleEdit(account)}
                       variant="outline"
                       className="flex-1 text-sm py-2 px-3 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                     >
@@ -339,8 +343,8 @@ const CommunityAccountsPage = () => {
                       </svg>
                       Edit
                     </Button>
-                    <Button 
-                      onClick={() => handleDelete(account.id!)} 
+                    <Button
+                      onClick={() => handleDelete(account.id!)}
                       variant="danger"
                       className="flex-1 text-sm py-2 px-3 bg-red-600 hover:bg-red-700 text-white transition-colors duration-200"
                     >
@@ -421,9 +425,11 @@ const CommunityAccountsPage = () => {
               {formState.imageUrl && (
                 <div className="mt-3">
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Preview:</p>
-                  <img 
-                    src={formState.imageUrl} 
-                    alt="Preview" 
+                  <Image
+                    src={formState.imageUrl}
+                    alt="Preview"
+                    width={64}
+                    height={64}
                     className="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
@@ -434,15 +440,15 @@ const CommunityAccountsPage = () => {
             </div>
           </ModalBody>
           <ModalFooter className="flex gap-3">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setIsModalOpen(false)}
               className="flex-1"
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               type="submit"
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
             >

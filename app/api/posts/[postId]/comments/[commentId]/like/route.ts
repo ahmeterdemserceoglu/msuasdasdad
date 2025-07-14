@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, adminAuth } from '@/app/lib/firebase-admin';
+import { adminDb } from '@/app/lib/firebase-admin';
 import { verifyAuth } from '@/app/lib/auth';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -10,7 +10,7 @@ export async function POST(
   try {
     // Verify authentication
     const authResult = await verifyAuth(req);
-    
+
     if (!authResult.authenticated) {
       return NextResponse.json(
         { error: authResult.error || 'Authentication required' },
@@ -29,7 +29,7 @@ export async function POST(
       .doc(postId)
       .collection('comments')
       .doc(commentId);
-    
+
     const commentDoc = await commentRef.get();
 
     if (!commentDoc.exists) {
@@ -60,9 +60,9 @@ export async function POST(
       const updatedCommentDoc = await commentRef.get();
       const updatedCommentData = updatedCommentDoc.data();
 
-      return NextResponse.json({ 
-        liked: false, 
-        likes: updatedCommentData?.likeCount || 0 
+      return NextResponse.json({
+        liked: false,
+        likes: updatedCommentData?.likeCount || 0
       });
     } else {
       // Like
@@ -79,7 +79,7 @@ export async function POST(
       if (commentData?.userId && commentData.userId !== userId) {
         const userDoc = await adminDb.collection('users').doc(userId).get();
         const userData = userDoc.data();
-        
+
         await adminDb.collection('notifications').add({
           userId: commentData.userId,
           type: 'comment_liked',
@@ -97,12 +97,12 @@ export async function POST(
       const updatedCommentDoc = await commentRef.get();
       const updatedCommentData = updatedCommentDoc.data();
 
-      return NextResponse.json({ 
-        liked: true, 
-        likes: updatedCommentData?.likeCount || 1 
+      return NextResponse.json({
+        liked: true,
+        likes: updatedCommentData?.likeCount || 1
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in comment like/unlike:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -115,13 +115,13 @@ export async function GET(
 ) {
   try {
     const authResult = await verifyAuth(req);
-    
+
     if (!authResult.authenticated) {
       return NextResponse.json({ liked: false });
     }
 
     const userId = authResult.userId!;
-    
+
     // Await params before accessing them
     const { postId, commentId } = await params;
 
@@ -135,7 +135,7 @@ export async function GET(
       .get();
 
     return NextResponse.json({ liked: userLikeDoc.exists });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ liked: false });
   }
 }

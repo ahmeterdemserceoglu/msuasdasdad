@@ -19,7 +19,7 @@ interface SecurityLog {
   ipAddress: string;
   userAgent: string;
   location?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 const SecurityLogsPage = () => {

@@ -1,6 +1,7 @@
 import React from 'react';
 import Card from './Card';
 import Button from './Button';
+import Image from 'next/image';
 
 interface CommunityAccountCardProps {
   account: {
@@ -17,24 +18,24 @@ const CommunityAccountCard: React.FC<CommunityAccountCardProps> = ({ account, on
   const getIcon = (type: string) => {
     switch (type.toLowerCase()) {
       case 'instagram':
-        return <img src="/icons/instagram.svg" alt="Instagram" className="w-6 h-6" />;
+        return <Image src="/icons/instagram.svg" alt="Instagram" width={24} height={24} />;
       case 'telegram':
-        return <img src="/icons/telegram.svg" alt="Telegram" className="w-6 h-6" />;
+        return <Image src="/icons/telegram.svg" alt="Telegram" width={24} height={24} />;
       case 'twitter':
-        return <img src="/icons/twitter.svg" alt="Twitter" className="w-6 h-6" />;
+        return <Image src="/icons/twitter.svg" alt="Twitter" width={24} height={24} />;
       case 'facebook':
-        return <img src="/icons/facebook.svg" alt="Facebook" className="w-6 h-6" />;
+        return <Image src="/icons/facebook.svg" alt="Facebook" width={24} height={24} />;
       case 'youtube':
-        return <img src="/icons/youtube.svg" alt="YouTube" className="w-6 h-6" />;
+        return <Image src="/icons/youtube.svg" alt="YouTube" width={24} height={24} />;
       default:
-        return <img src="/icons/globe.svg" alt="Website" className="w-6 h-6" />;
+        return <Image src="/icons/globe.svg" alt="Website" width={24} height={24} />;
     }
   };
 
   return (
     <Card className="p-4 flex flex-col items-center text-center">
       {account.imageUrl && (
-        <img src={account.imageUrl} alt={account.name} className="w-24 h-24 object-cover rounded-full mb-4" />
+        <Image src={account.imageUrl} alt={account.name} width={96} height={96} className="w-24 h-24 object-cover rounded-full mb-4" />
       )}
       <div className="mb-2">
         {getIcon(account.type)}
@@ -46,7 +47,7 @@ const CommunityAccountCard: React.FC<CommunityAccountCardProps> = ({ account, on
       </a>
       {account.type.toLowerCase() === 'telegram' && onJoinTelegram && (
         <Button onClick={() => onJoinTelegram(account.url)} className="mt-2">
-          Telegram'a Katıl
+          Telegram&apos;a Katıl
         </Button>
       )}
     </Card>

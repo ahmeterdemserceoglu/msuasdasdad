@@ -135,7 +135,8 @@ export default function RegisterPage() {
       await signUp(formData.email, formData.password, formData.displayName, parseInt(formData.birthYear));
       toast.success('Hesabınız başarıyla oluşturuldu! Giriş sayfasına yönlendiriliyorsunuz...');
       router.push('/');
-    } catch (error: Error) {
+} catch (e: unknown) {
+      const error = e as { code?: string; message: string };
       console.error('Register error:', error);
       
       // Firebase Auth hata kodlarına göre detaylı mesajlar
@@ -177,7 +178,8 @@ export default function RegisterPage() {
       await signInWithGoogle();
       toast.success('Google ile başarıyla kayıt oldunuz! Doğum yılı bilginizi profilden güncellemeyi unutmayın.');
       router.push('/');
-    } catch (error: Error) {
+} catch (e: unknown) {
+      const error = e as { code?: string; message: string };
       console.error('Google signup error:', error);
       
       // Google Sign-In hata kodlarına göre detaylı mesajlar
@@ -216,7 +218,7 @@ export default function RegisterPage() {
             <Shield className="h-12 w-12 text-military-beige" />
           </Link>
           <h1 className="text-3xl font-bold text-white mb-2">Hesap Oluştur</h1>
-          <p className="text-military-beige/80">MSÜ Rehber'e katılın</p>
+          <p className="text-military-beige/80">MSÜ Rehber&apos;e katılın</p>
         </div>
 
         <Card variant="elevated" className="backdrop-blur-sm bg-white/95 dark:bg-gray-900/95">

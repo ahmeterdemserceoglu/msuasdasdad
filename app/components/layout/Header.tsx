@@ -8,6 +8,7 @@ import { Home, FileText, PlusCircle, BookOpen, Shield, LogOut, Menu, X, Sun, Moo
 import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/app/lib/utils';
 import { useAdminNotifications } from '@/app/lib/useAdminNotifications';
+import Image from 'next/image';
 
 export default function Header() {
   const pathname = usePathname();
@@ -22,7 +23,7 @@ export default function Header() {
 
   useEffect(() => {
     // Dark mode kontrolü
-    const isDark = localStorage.getItem('darkMode') === 'true' || 
+    const isDark = localStorage.getItem('darkMode') === 'true' ||
       (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches);
     setIsDarkMode(isDark);
     document.documentElement.classList.toggle('dark', isDark);
@@ -87,7 +88,7 @@ export default function Header() {
               if (item.authRequired && !user) return null;
               const Icon = item.icon;
               const isActive = pathname === item.href;
-              
+
               return (
                 <Link
                   key={item.href}
@@ -123,7 +124,7 @@ export default function Header() {
                     </span>
                   )}
                 </button>
-                
+
                 {/* Notification Dropdown */}
                 {isNotificationDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
@@ -183,7 +184,7 @@ export default function Header() {
                 )}
               </div>
             )}
-            
+
             {/* Admin Dropdown */}
             {user?.isAdmin && (
               <div className="relative" ref={adminDropdownRef}>
@@ -195,7 +196,7 @@ export default function Header() {
                   <span className="text-sm font-medium">Admin</span>
                   <ChevronDown className="h-4 w-4" />
                 </button>
-                
+
                 {/* Admin Dropdown Menu */}
                 {isAdminDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
@@ -234,7 +235,7 @@ export default function Header() {
                 )}
               </div>
             )}
-            
+
             {/* Dark Mode Toggle */}
             <button
               onClick={toggleDarkMode}
@@ -247,35 +248,39 @@ export default function Header() {
             {/* User Menu */}
             {user ? (
               <div className="hidden md:flex items-center space-x-4">
-                <Link 
-                  href="/profile" 
-                  className="flex items-center space-x-2 text-sm hover:opacity-80 transition-opacity"
+                <Link
+                  href="/profile"
+                  className="flex items-center space-x-2"
                 >
-                  {user.photoURL ? (
-                    <img
-                      src={user.photoURL}
-                      alt={user.displayName}
-                      className="h-8 w-8 rounded-full"
-                    />
-                  ) : (
-                    <div className="h-8 w-8 rounded-full bg-military-green flex items-center justify-center text-white">
-                      {user.displayName[0].toUpperCase()}
-                    </div>
-                  )}
-                  <span className="text-gray-700 dark:text-gray-300">{user.displayName}</span>
+                  <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                    {user.photoURL ? (
+                      <Image
+                        src={user.photoURL}
+                        alt="Profil fotoğrafı"
+                        width={32}
+                        height={32}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-sm font-bold text-gray-600 dark:text-gray-300">
+                        {user.displayName?.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <span className="hidden lg:block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {user.displayName}
+                  </span>
                 </Link>
-                <Button
+                <button
                   onClick={handleLogout}
-                  variant="ghost"
-                  size="sm"
-                  className="flex items-center space-x-1"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span>Çıkış</span>
-                </Button>
+                  <span>Çıkış Yap</span>
+                </button>
               </div>
             ) : (
-              <div className="hidden md:flex items-center space-x-3">
+              <div className="hidden md:flex items-center space-x-2">
                 <Link href="/login">
                   <Button variant="ghost" size="sm">Giriş Yap</Button>
                 </Link>
@@ -298,13 +303,44 @@ export default function Header() {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-          <div className="px-4 py-4 space-y-2">
+        <div className="md:hidden mt-2 pb-4 border-t border-gray-200 dark:border-gray-700">
+          {user ? (
+            <div className="px-4 pt-4 pb-2">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                  {user.photoURL ? (
+                    <Image
+                      src={user.photoURL}
+                      alt="Profil fotoğrafı"
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-lg font-bold text-gray-600 dark:text-gray-300">
+                      {user.displayName?.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <p className="font-medium text-gray-800 dark:text-white">{user.displayName}</p>
+                  <Link
+                    href="/profile"
+                    className="text-sm text-military-green hover:underline"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Profili Görüntüle
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : null}
+          <nav className="flex flex-col space-y-1 px-2 mt-2">
             {navItems.map((item) => {
               if (item.authRequired && !user) return null;
               const Icon = item.icon;
               const isActive = pathname === item.href;
-              
+
               return (
                 <Link
                   key={item.href}
@@ -322,25 +358,27 @@ export default function Header() {
                 </Link>
               );
             })}
-            
+
             {/* User Info / Auth Buttons in Mobile */}
             <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
               {user ? (
                 <>
-                  <Link 
+                  <Link
                     href="/profile"
                     onClick={() => setIsMenuOpen(false)}
                     className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
                   >
                     {user.photoURL ? (
-                      <img
+                      <Image
                         src={user.photoURL}
-                        alt={user.displayName}
+                        alt={user.displayName || 'Profil'}
+                        width={40}
+                        height={40}
                         className="h-10 w-10 rounded-full"
                       />
                     ) : (
                       <div className="h-10 w-10 rounded-full bg-military-green flex items-center justify-center text-white">
-                        {user.displayName[0].toUpperCase()}
+                        {user.displayName?.[0].toUpperCase()}
                       </div>
                     )}
                     <div>
@@ -375,7 +413,7 @@ export default function Header() {
                 </div>
               )}
             </div>
-          </div>
+          </nav>
         </div>
       )}
     </header>

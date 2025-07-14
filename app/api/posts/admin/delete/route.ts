@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, adminAuth } from '@/app/lib/firebase-admin';
+import { adminDb } from '@/app/lib/firebase-admin';
 import { verifyAuth } from '@/app/lib/auth';
 
 // Check if user is admin

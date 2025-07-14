@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import XLayout from '../components/layout/XLayout';
-import { Users } from 'lucide-react';
+import { Users, ArrowLeft } from 'lucide-react';
 import CommunityAccountCard from '../components/ui/CommunityAccountCard';
 
 interface CommunityAccount {
@@ -14,6 +15,7 @@ interface CommunityAccount {
 }
 
 export default function CommunityPage() {
+  const router = useRouter();
   const [accounts, setAccounts] = useState<CommunityAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +54,9 @@ export default function CommunityPage() {
       <XLayout containerClassName="max-w-7xl mx-auto min-h-screen relative">
         <header className="sticky top-0 z-10 bg-[var(--background)]/90 backdrop-blur-md border-b border-[var(--border)] p-4">
           <div className="flex items-center space-x-3">
+            <button onClick={() => router.push('/')} className="p-2 rounded-full hover:bg-[var(--card-hover)]">
+              <ArrowLeft size={20} />
+            </button>
             <Users className="w-6 h-6 text-[var(--primary)]" />
             <h1 className="text-xl font-bold">Topluluğumuza Katılın</h1>
           </div>
@@ -66,6 +71,9 @@ export default function CommunityPage() {
       <XLayout containerClassName="max-w-7xl mx-auto min-h-screen relative">
         <header className="sticky top-0 z-10 bg-[var(--background)]/90 backdrop-blur-md border-b border-[var(--border)] p-4">
           <div className="flex items-center space-x-3">
+            <button onClick={() => router.push('/')} className="p-2 rounded-full hover:bg-[var(--card-hover)]">
+              <ArrowLeft size={20} />
+            </button>
             <Users className="w-6 h-6 text-[var(--primary)]" />
             <h1 className="text-xl font-bold">Topluluğumuza Katılın</h1>
           </div>
@@ -79,6 +87,9 @@ export default function CommunityPage() {
     <XLayout containerClassName="max-w-7xl mx-auto min-h-screen relative">
       <header className="sticky top-0 z-10 bg-[var(--background)]/90 backdrop-blur-md border-b border-[var(--border)] p-4">
         <div className="flex items-center space-x-3">
+          <button onClick={() => router.push('/')} className="p-2 rounded-full hover:bg-[var(--card-hover)]">
+            <ArrowLeft size={20} />
+          </button>
           <Users className="w-6 h-6 text-[var(--primary)]" />
           <h1 className="text-xl font-bold">Topluluğumuza Katılın</h1>
         </div>

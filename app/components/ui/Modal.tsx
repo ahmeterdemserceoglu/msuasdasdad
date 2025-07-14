@@ -6,9 +6,10 @@ interface ModalProps {
   onClose: () => void;
   children: ReactNode;
   className?: string;
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
 
-export default function Modal({ isOpen, onClose, children, className }: ModalProps) {
+export default function Modal({ isOpen, onClose, children, className, size = 'md' }: ModalProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -36,7 +37,14 @@ export default function Modal({ isOpen, onClose, children, className }: ModalPro
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div
         className={cn(
-          "relative z-10 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl max-w-md w-full mx-4",
+          "relative z-10 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl w-full mx-4",
+          {
+            'max-w-sm': size === 'sm',
+            'max-w-md': size === 'md',
+            'max-w-lg': size === 'lg',
+            'max-w-xl': size === 'xl',
+            'max-w-2xl': size === '2xl',
+          },
           className
         )}
       >

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/app/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import XLayout from '@/app/components/layout/XLayout';
@@ -24,20 +24,7 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Auth yüklenene kadar bekle
-    if (authLoading) return;
-    
-    // Auth yüklendikten sonra user yoksa login'e yönlendir
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-
-    fetchNotifications();
-  }, [user, authLoading, router]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!firebaseUser) return;
 
     try {
@@ -59,7 +46,20 @@ export default function NotificationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [firebaseUser]);
+
+  useEffect(() => {
+    // Auth yüklenene kadar bekle
+    if (authLoading) return;
+
+    // Auth yüklendikten sonra user yoksa login'e yönlendir
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    fetchNotifications();
+  }, [user, authLoading, router, fetchNotifications]);
 
   const markAsRead = async (notificationId: string) => {
     if (!firebaseUser) return;
@@ -75,8 +75,8 @@ export default function NotificationsPage() {
       });
 
       if (response.ok) {
-        setNotifications(prev => 
-          prev.map(notif => 
+        setNotifications(prev =>
+          prev.map(notif =>
             notif.id === notificationId ? { ...notif, read: true } : notif
           )
         );
@@ -100,7 +100,7 @@ export default function NotificationsPage() {
       });
 
       if (response.ok) {
-        setNotifications(prev => 
+        setNotifications(prev =>
           prev.map(notif => ({ ...notif, read: true }))
         );
         toast.success('Tüm bildirimler okundu olarak işaretlendi');
@@ -157,7 +157,7 @@ export default function NotificationsPage() {
     if (diffInMinutes < 60) return `${diffInMinutes} dakika önce`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} saat önce`;
     if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)} gün önce`;
-    
+
     return date.toLocaleDateString('tr-TR', {
       day: 'numeric',
       month: 'long',
@@ -167,7 +167,7 @@ export default function NotificationsPage() {
 
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id);
-    
+
     if (notification.postId) {
       router.push(`/posts/${notification.postId}`);
     }
@@ -220,9 +220,8 @@ export default function NotificationsPage() {
           notifications.map((notification) => (
             <div
               key={notification.id}
-              className={`p-4 hover:bg-[var(--card-hover)] transition-colors cursor-pointer relative ${
-                !notification.read ? 'bg-[var(--primary-light)]' : ''
-              }`}
+              className={`p-4 hover:bg-[var(--card-hover)] transition-colors cursor-pointer relative ${!notification.read ? 'bg-[var(--primary-light)]' : ''
+                }`}
               onClick={() => handleNotificationClick(notification)}
             >
               <div className="flex items-start space-x-3">

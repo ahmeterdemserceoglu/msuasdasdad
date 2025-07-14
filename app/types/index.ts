@@ -4,11 +4,14 @@ export interface User {
   displayName: string;
   photoURL?: string;
   birthYear: number;
+  city?: string; // User's city
   isAdmin?: boolean;
   createdAt: Date; // Firestore Timestamp veya Date
+  bio?: string; // Add bio property
   likedPosts?: string[]; // Array of post IDs the user has liked
   savedPosts?: string[]; // Array of post IDs the user has saved
   interviewDate?: Date; // Mülakat tarihi
+  interviewTime?: string; // Mülakat saati
   isOnline?: boolean; // Online durumu
   lastSeen?: Date; // Son görülme
   friends?: string[]; // Arkadaş listesi (user id'leri)
@@ -18,18 +21,18 @@ export interface User {
   interviewBranch?: CandidateType; // Mülakat branşı
 }
 
-export type CandidateType = 
-  | 'subay' 
-  | 'astsubay' 
-  | 'harbiye' 
-  | 'sahil-guvenlik' 
+export type CandidateType =
+  | 'subay'
+  | 'astsubay'
+  | 'harbiye'
+  | 'sahil-guvenlik'
   | 'jandarma';
 
-export type InterviewType = 
-  | 'sozlu' 
-  | 'spor' 
-  | 'evrak' 
-  | 'psikolojik' 
+export type InterviewType =
+  | 'sozlu'
+  | 'spor'
+  | 'evrak'
+  | 'psikolojik'
   | 'diger';
 
 export interface Post {
@@ -53,6 +56,8 @@ export interface Post {
   rejectionReason?: string;
   createdAt: Date;
   updatedAt: Date;
+  viewCount?: number;
+  postType?: 'deneyim' | 'soru' | 'bilgi';
 }
 
 export interface Comment {
@@ -86,14 +91,14 @@ export interface UserPostLimit {
   postCount: number;
 }
 
-export type NotificationType = 
-  | 'post_approved' 
-  | 'post_rejected' 
-  | 'like' 
-  | 'post_commented' 
+export type NotificationType =
+  | 'post_approved'
+  | 'post_rejected'
+  | 'like'
+  | 'post_commented'
   | 'comment_liked'
   | 'comment_replied'
-  | 'new_post' 
+  | 'new_post'
   | 'new_user';
 
 export interface Notification {

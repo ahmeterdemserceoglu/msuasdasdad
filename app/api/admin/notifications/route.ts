@@ -191,8 +191,16 @@ export async function POST(request: NextRequest) {
     }
 }
 
+interface Webhook {
+    id: string;
+    url: string;
+    secret: string;
+    active: boolean;
+    events: string[];
+}
+
 // Webhook'ları tetikleme fonksiyonu
-async function triggerWebhooks(type: string, notification: any) {
+async function triggerWebhooks(type: string, notification: unknown) {
     try {
         // Webhook ayarlarını al
         const webhookSettings = await db.collection('settings')
@@ -203,14 +211,14 @@ async function triggerWebhooks(type: string, notification: any) {
             return;
         }
 
-        const webhooks = webhookSettings.data()?.endpoints || [];
-        const activeWebhooks = webhooks.filter((webhook: any) => 
+        const webhooks = (webhookSettings.data()?.endpoints || []) as Webhook[];
+        const activeWebhooks = webhooks.filter((webhook: Webhook) => 
             webhook.active && 
             (!webhook.events || webhook.events.includes(type))
         );
 
         // Her webhook'a paralel istek gönder
-        const webhookPromises = activeWebhooks.map(async (webhook: any) => {
+        const webhookPromises = activeWebhooks.map(async (webhook: Webhook) => {
             try {
                 const response = await fetch(webhook.url, {
                     method: 'POST',

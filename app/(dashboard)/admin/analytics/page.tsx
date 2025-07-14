@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/lib/auth-context';
 import { BarChart3, TrendingUp, Users, Eye, MessageSquare, ThumbsUp, Globe, Clock, Activity } from 'lucide-react';
 

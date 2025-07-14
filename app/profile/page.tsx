@@ -3,33 +3,40 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/lib/auth-context';
-import { db, storage } from '@/app/lib/firebase';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updateProfile } from 'firebase/auth';
-import Input from '@/app/components/ui/Input';
-import Button from '@/app/components/ui/Button';
-import Card, { CardContent, CardHeader, CardTitle } from '@/app/components/ui/Card';
-import { User, Calendar, Mail, Camera, Shield, ArrowLeft, MapPin, Users, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import {
+  Settings,
+  Grid3X3,
+  Heart,
+  MessageCircle,
+  List,
+  Award,
+  FileText
+} from 'lucide-react';
+import XLayout from '@/app/components/layout/XLayout';
+import PostCard from '@/app/components/ui/PostCard';
+import { Post } from '@/app/types';
 import Image from 'next/image';
-import Link from 'next/link';
+
+interface UserStats {
+  totalPosts: number;
+  totalLikes: number;
+  totalComments: number;
+  totalViews: number;
+}
 
 export default function ProfilePage() {
   const router = useRouter();
   const { user, firebaseUser, loading: authLoading } = useAuth();
-  const [formData, setFormData] = useState({
-    displayName: '',
-    birthYear: '',
-    interviewDate: '',
-    interviewTime: '',
-    interviewCity: '',
-    interviewBranch: '' as any,
+  const [userPosts, setUserPosts] = useState<Post[]>([]);
+  const [userStats, setUserStats] = useState<UserStats>({
+    totalPosts: 0,
+    totalLikes: 0,
+    totalComments: 0,
+    totalViews: 0
   });
-  const [uploading, setUploading] = useState(false);
-  const [updating, setUpdating] = useState(false);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -37,192 +44,73 @@ export default function ProfilePage() {
     }
   }, [user, authLoading, router]);
 
+  // Fetch user posts
   useEffect(() => {
+    const fetchUserPosts = async () => {
+      if (!user) return;
+
+      try {
+        setPostsLoading(true);
+        const response = await fetch(`/api/users/${user.uid}/posts`);
+
+        if (!response.ok) {
+          console.error('Failed to fetch user posts');
+          return;
+        }
+
+        const data = await response.json();
+        const posts: Post[] = data.posts || [];
+        setUserPosts(posts);
+
+        // Calculate stats
+        const totalLikes = posts.reduce((sum, post) => sum + (post.likeCount || 0), 0);
+        const totalComments = posts.reduce((sum, post) => sum + (post.commentCount || 0), 0);
+        const totalViews = posts.reduce((sum, post) => sum + (post.viewCount || 0), 0);
+
+        setUserStats({
+          totalPosts: posts.length,
+          totalLikes,
+          totalComments,
+          totalViews
+        });
+      } catch (error) {
+        console.error('Error fetching user posts:', error);
+      } finally {
+        setPostsLoading(false);
+      }
+    };
+
     if (user) {
-      setFormData({
-        displayName: user.displayName || '',
-        birthYear: user.birthYear?.toString() || '',
-        interviewDate: user.interviewDate ? (() => {
-          try {
-            let date;
-            // Firestore Timestamp kontrolü
-            if (user.interviewDate && typeof user.interviewDate === 'object' && 'toDate' in user.interviewDate) {
-              date = user.interviewDate.toDate();
-            } else if (user.interviewDate instanceof Date) {
-              date = user.interviewDate;
-            } else if (typeof user.interviewDate === 'string' || typeof user.interviewDate === 'number') {
-              date = new Date(user.interviewDate);
-            } else {
-              return '';
-            }
-            
-            if (!isNaN(date.getTime())) {
-              return date.toISOString().split('T')[0];
-            }
-          } catch (e) {
-            console.error('Invalid interview date:', user.interviewDate);
-          }
-          return '';
-        })() : '',
-        interviewTime: user.interviewDate ? (() => {
-          try {
-            let date;
-            // Firestore Timestamp kontrolü
-            if (user.interviewDate && typeof user.interviewDate === 'object' && 'toDate' in user.interviewDate) {
-              date = user.interviewDate.toDate();
-            } else if (user.interviewDate instanceof Date) {
-              date = user.interviewDate;
-            } else if (typeof user.interviewDate === 'string' || typeof user.interviewDate === 'number') {
-              date = new Date(user.interviewDate);
-            } else {
-              return '';
-            }
-            
-            if (!isNaN(date.getTime())) {
-              const hours = date.getHours().toString().padStart(2, '0');
-              const minutes = date.getMinutes().toString().padStart(2, '0');
-              return `${hours}:${minutes}`;
-            }
-          } catch (e) {
-            console.error('Invalid interview time:', user.interviewDate);
-          }
-          return '';
-        })() : '',
-        interviewCity: user.interviewCity || '',
-        interviewBranch: user.interviewBranch || '',
-      });
+      fetchUserPosts();
     }
   }, [user]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Fotoğraf boyutu 5MB\'dan küçük olmalıdır.');
-        return;
-      }
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const uploadPhoto = async (): Promise<string | null> => {
-    if (!photoFile || !firebaseUser) return null;
-    
-    setUploading(true);
-    try {
-      const storageRef = ref(storage, `users/${firebaseUser.uid}/profile.jpg`);
-      await uploadBytes(storageRef, photoFile);
-      const photoURL = await getDownloadURL(storageRef);
-      
-      // Firebase Auth profilini güncelle
-      await updateProfile(firebaseUser, { photoURL });
-      
-      return photoURL;
-    } catch (error) {
-      console.error('Photo upload error:', error);
-      toast.error('Fotoğraf yüklenirken bir hata oluştu.');
-      return null;
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user || !firebaseUser) return;
-
-    const birthYear = parseInt(formData.birthYear);
-    if (isNaN(birthYear) || birthYear < 1990 || birthYear > 2010) {
-      toast.error('Doğum yılı 1990-2010 arasında olmalıdır.');
-      return;
-    }
-
-    setUpdating(true);
-
-    try {
-      // Fotoğraf yükleme
-      let photoURL = user.photoURL;
-      if (photoFile) {
-        const uploadedPhotoURL = await uploadPhoto();
-        if (uploadedPhotoURL) {
-          photoURL = uploadedPhotoURL;
-        }
-      }
-
-      // Firebase Auth profilini güncelle
-      if (formData.displayName !== firebaseUser.displayName) {
-        await updateProfile(firebaseUser, { displayName: formData.displayName });
-      }
-
-      // Firestore'u güncelle
-      const updateData: any = {
-        displayName: formData.displayName,
-        birthYear,
-      };
-      
-      // Mülakat tarihini ve saatini ekle
-      if (formData.interviewDate) {
-        const dateStr = formData.interviewDate;
-        const timeStr = formData.interviewTime || '09:00';
-        const [hours, minutes] = timeStr.split(':').map(num => parseInt(num));
-        
-        const interviewDateTime = new Date(dateStr);
-        interviewDateTime.setHours(hours, minutes, 0, 0);
-        
-        updateData.interviewDate = interviewDateTime;
-      }
-      
-      // Mülakat şehri ve branşını ekle
-      if (formData.interviewCity) {
-        updateData.interviewCity = formData.interviewCity;
-      }
-      if (formData.interviewBranch) {
-        updateData.interviewBranch = formData.interviewBranch;
-      }
-      
-      if (photoURL !== user.photoURL) {
-        updateData.photoURL = photoURL;
-      }
-
-      await updateDoc(doc(db, 'users', user.uid), updateData);
-
-      // Kullanıcı bilgilerini yeniden yükle
-      const updatedUserDoc = await getDoc(doc(db, 'users', user.uid));
-      if (updatedUserDoc.exists()) {
-        const updatedData = updatedUserDoc.data();
-        // Auth context'i güncellemek için sayfayı yenile
-        window.location.reload();
-      }
-
-      toast.success('Profil başarıyla güncellendi!');
-      setPhotoFile(null);
-      setPhotoPreview(null);
-    } catch (error: any) {
-      console.error('Profile update error:', error);
-      toast.error('Profil güncellenirken bir hata oluştu.');
-    } finally {
-      setUpdating(false);
-    }
+  const formatDate = (date: any) => {
+    if (!date) return '';
+    const d = date.toDate ? date.toDate() : new Date(date);
+    return d.toLocaleDateString('tr-TR', {
+      year: 'numeric',
+      month: 'long'
+    });
   };
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-military-green"></div>
-      </div>
+      <XLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary)]"></div>
+        </div>
+      </XLayout>
     );
   }
 
@@ -230,270 +118,215 @@ export default function ProfilePage() {
     return null;
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-6">
-          <Link 
-            href="/" 
-            className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-military-green transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Ana Sayfaya Dön
-          </Link>
+  const PostGrid = ({ posts, loading }: { posts: Post[], loading: boolean }) => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary)]"></div>
         </div>
+      );
+    }
 
-        <Card variant="elevated">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-6 w-6 text-military-green" />
-              Profil Bilgilerim
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Profil Fotoğrafı */}
-              <div className="flex flex-col items-center space-y-4">
-                <div className="relative">
-                  <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
-                    {photoPreview || user.photoURL ? (
-                      <Image
-                        src={photoPreview || user.photoURL || ''}
-                        alt="Profil fotoğrafı"
-                        width={128}
-                        height={128}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <User className="h-16 w-16 text-gray-400" />
-                      </div>
-                    )}
+    if (posts.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">📝</div>
+          <p className="text-[var(--muted)]">
+            Henüz paylaşım yok
+          </p>
+        </div>
+      );
+    }
+
+    if (viewMode === 'grid') {
+      return (
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+          {posts.map((post) => (
+            <div
+              key={post.id}
+              onClick={() => router.push(`/posts/${post.id}`)}
+              className="aspect-square bg-[var(--card)] hover:opacity-80 cursor-pointer relative group"
+            >
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center space-x-4 text-white">
+                  <div className="flex items-center space-x-1">
+                    <Heart size={20} fill="white" />
+                    <span>{post.likeCount || 0}</span>
                   </div>
-                  <label 
-                    htmlFor="photo-upload" 
-                    className="absolute bottom-0 right-0 bg-military-green text-white p-2 rounded-full cursor-pointer hover:bg-military-green/90 transition-colors"
-                  >
-                    <Camera className="h-5 w-5" />
-                    <input
-                      id="photo-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      className="hidden"
-                    />
-                  </label>
+                  <div className="flex items-center space-x-1">
+                    <MessageCircle size={20} fill="white" />
+                    <span>{post.commentCount || 0}</span>
+                  </div>
                 </div>
-                {photoPreview && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setPhotoFile(null);
-                      setPhotoPreview(null);
-                    }}
-                  >
-                    Fotoğrafı Kaldır
-                  </Button>
+              </div>
+              <div className="p-4 h-full flex items-center justify-center">
+                <p className="text-sm text-center line-clamp-3">
+                  {post.summary || post.content}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {posts.map((post) => (
+          <PostCard
+            key={post.id}
+            id={post.id}
+            content={post.summary || post.content || ''}
+            userId={post.userId}
+            userName={post.userName}
+            userPhotoURL={post.userPhotoURL}
+            tags={(post.tags as unknown as Record<string, string>) || {}}
+            likes={post.likeCount}
+            commentCount={post.commentCount}
+            viewCount={post.viewCount || 0}
+            createdAt={new Date(post.createdAt).toString()}
+            postType={post.interviewType}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <XLayout containerClassName="w-full border-x border-[var(--border)] min-h-screen relative">
+      {/* Profile Header */}
+      <div className="border-b border-[var(--border)]">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-start space-x-8">
+            {/* Profile Picture */}
+            <div className="flex-shrink-0">
+              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-4xl font-bold">
+                {user.photoURL ? (
+                  <Image
+                    src={user.photoURL}
+                    alt={user.displayName || ''}
+                    width={128}
+                    height={128}
+                    className="w-32 h-32 rounded-full object-cover"
+                  />
+                ) : (
+                  user.displayName?.charAt(0).toUpperCase()
                 )}
               </div>
+            </div>
 
-              {/* E-posta (Salt okunur) */}
-              <Input
-                type="email"
-                label="E-posta Adresi"
-                value={user.email}
-                disabled
-                readOnly
-                icon={<Mail className="h-5 w-5 text-gray-400" />}
-              />
-
-              {/* Ad Soyad */}
-              <Input
-                type="text"
-                name="displayName"
-                label="Ad Soyad"
-                placeholder="Adınız ve soyadınız"
-                value={formData.displayName}
-                onChange={handleChange}
-                required
-                icon={<User className="h-5 w-5 text-gray-400" />}
-              />
-
-              {/* Doğum Yılı */}
-              <Input
-                type="number"
-                name="birthYear"
-                label="Doğum Yılı"
-                placeholder="Örn: 2000"
-                value={formData.birthYear}
-                onChange={handleChange}
-                required
-                min="1990"
-                max="2010"
-                icon={<Calendar className="h-5 w-5 text-gray-400" />}
-              />
-
-              {/* Mülakat Tarihi ve Saati */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Profile Info */}
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Mülakat Tarihi
-                  </label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                    <input
-                      type="date"
-                      name="interviewDate"
-                      value={formData.interviewDate}
-                      onChange={handleChange}
-                      min={new Date().toISOString().split('T')[0]}
-                      className="w-full pl-10 pr-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    />
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Sadece bugün ve sonraki tarihler seçilebilir
-                  </p>
+                  <h1 className="text-2xl font-bold">{user.displayName}</h1>
+                  <p className="text-[var(--muted)]">@{user.uid.slice(0, 8)}</p>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Mülakat Saati
-                  </label>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                    <input
-                      type="time"
-                      name="interviewTime"
-                      value={formData.interviewTime}
-                      onChange={handleChange}
-                      className="w-full pl-10 pr-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    />
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Mülakat saatini belirtin
-                  </p>
-                </div>
-              </div>
-              
-              <p className="text-sm text-gray-600 dark:text-gray-400 -mt-2">
-                <span className="font-medium">💡 İpucu:</span> Mülakat bilgilerinizi girerek aynı tarihteki diğer adaylarla tanışabilirsiniz
-              </p>
-
-              {/* Mülakat Şehri */}
-              <Input
-                type="text"
-                name="interviewCity"
-                label="Mülakat Şehri"
-                placeholder="Örn: Ankara"
-                value={formData.interviewCity}
-                onChange={handleChange}
-                icon={<MapPin className="h-5 w-5 text-gray-400" />}
-              />
-
-              {/* Mülakat Branşı */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Mülakat Branşı
-                </label>
-                <div className="relative">
-                  <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <select
-                    name="interviewBranch"
-                    value={formData.interviewBranch}
-                    onChange={(e) => setFormData(prev => ({ ...prev, interviewBranch: e.target.value }))}
-                    className="w-full pl-10 pr-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => router.push('/settings/profile')}
+                    className="px-4 py-2 bg-[var(--card)] border border-[var(--border)] rounded-lg hover:bg-[var(--card-hover)] transition-colors"
                   >
-                    <option value="">Seçiniz</option>
-                    <option value="subay">Subay</option>
-                    <option value="astsubay">Astsubay</option>
-                    <option value="harbiye">Harbiye</option>
-                    <option value="sahil-guvenlik">Sahil Güvenlik</option>
-                    <option value="jandarma">Jandarma</option>
-                  </select>
+                    Profili Düzenle
+                  </button>
+                  <button
+                    onClick={() => router.push('/settings')}
+                    className="p-2 bg-[var(--card)] border border-[var(--border)] rounded-lg hover:bg-[var(--card-hover)] transition-colors"
+                  >
+                    <Settings size={20} />
+                  </button>
                 </div>
               </div>
 
-              {/* Admin Durumu */}
-              {user.isAdmin && (
-                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                  <p className="text-green-800 dark:text-green-200 font-medium flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
-                    Admin Yetkilerine Sahipsiniz
-                  </p>
+              {/* Stats */}
+              <div className="flex items-center space-x-8 mb-4">
+                <div>
+                  <span className="font-bold text-lg">{formatNumber(userStats.totalPosts)}</span>
+                  <span className="text-[var(--muted)] ml-1">gönderi</span>
                 </div>
+                <div>
+                  <span className="font-bold text-lg">{formatNumber(userStats.totalLikes)}</span>
+                  <span className="text-[var(--muted)] ml-1">beğeni</span>
+                </div>
+                <div>
+                  <span className="font-bold text-lg">{formatNumber(userStats.totalComments)}</span>
+                  <span className="text-[var(--muted)] ml-1">yorum</span>
+                </div>
+                <div>
+                  <span className="font-bold text-lg">{formatNumber(userStats.totalViews)}</span>
+                  <span className="text-[var(--muted)] ml-1">görüntülenme</span>
+                </div>
+              </div>
+
+              {/* Bio */}
+              {user.bio && (
+                <p className="text-[var(--foreground)] mb-2">{user.bio}</p>
               )}
 
-              {/* Mülakat ve Kayıt Bilgileri */}
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-2">
-                {user.interviewDate && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400 font-medium">Mülakat Tarihi:</span>
-                    <span className="text-[var(--foreground)] font-semibold">
-                      {(() => {
-                        try {
-                          let date;
-                          if (user.interviewDate && typeof user.interviewDate === 'object' && 'toDate' in user.interviewDate) {
-                            date = user.interviewDate.toDate();
-                          } else if (user.interviewDate instanceof Date) {
-                            date = user.interviewDate;
-                          } else {
-                            date = new Date(user.interviewDate);
-                          }
-                          
-                          return date.toLocaleDateString('tr-TR', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          });
-                        } catch (e) {
-                          return 'Geçersiz tarih';
-                        }
-                      })()}
-                    </span>
-                  </div>
+              {/* Additional Info */}
+              <div className="flex items-center space-x-4 text-sm text-[var(--muted)]">
+                {user.city && (
+                  <span>📍 {user.city}</span>
                 )}
-                
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400 font-medium">Kayıt Tarihi:</span>
-                  <span className="text-[var(--foreground)]">
-                    {
-                      user.createdAt ? (
-                        // Firestore Timestamp veya Date nesnesini kontrol et
-                        typeof user.createdAt === 'object' && 'toDate' in user.createdAt
-                          ? user.createdAt.toDate().toLocaleDateString('tr-TR', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })
-                          : new Date(user.createdAt).toLocaleDateString('tr-TR', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })
-                      ) : 'Bilinmiyor'
-                    }
-                  </span>
-                </div>
+                <span>📅 {formatDate(user.createdAt)} tarihinde katıldı</span>
               </div>
+            </div>
+          </div>
 
-              {/* Güncelle Butonu */}
-              <Button
-                type="submit"
-                className="w-full"
-                size="lg"
-                isLoading={updating || uploading}
-                disabled={updating || uploading}
-              >
-                {uploading ? 'Fotoğraf Yükleniyor...' : 'Profili Güncelle'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+          {/* Achievement Badges */}
+          <div className="mt-6 flex items-center space-x-4">
+            <div className="flex items-center space-x-2 px-3 py-1.5 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 rounded-full text-sm">
+              <Award size={16} />
+              <span>Aktif Üye</span>
+            </div>
+            {userStats.totalPosts >= 10 && (
+              <div className="flex items-center space-x-2 px-3 py-1.5 bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full text-sm">
+                <FileText size={16} />
+                <span>İçerik Üreticisi</span>
+              </div>
+            )}
+            {userStats.totalLikes >= 100 && (
+              <div className="flex items-center space-x-2 px-3 py-1.5 bg-pink-100 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 rounded-full text-sm">
+                <Heart size={16} />
+                <span>Popüler</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* Tabs */}
+      <div className="border-b border-[var(--border)] sticky top-0 bg-[var(--background)] z-10">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Grid3X3 size={20} className="text-[var(--primary)]" />
+              <span className="font-semibold text-[var(--primary)]">Gönderiler</span>
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded ${viewMode === 'grid' ? 'bg-[var(--card-hover)]' : ''}`}
+              >
+                <Grid3X3 size={20} />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded ${viewMode === 'list' ? 'bg-[var(--card-hover)]' : ''}`}
+              >
+                <List size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+        <PostGrid posts={userPosts} loading={postsLoading} />
+      </div>
+    </XLayout>
   );
 }

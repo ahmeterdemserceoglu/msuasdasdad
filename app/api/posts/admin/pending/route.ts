@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   try {
     // Verify authentication
     const authResult = await verifyAuth(req);
-    
+
     if (!authResult.authenticated) {
       return NextResponse.json(
         { error: authResult.error || 'Yetkisiz erişim' },
@@ -43,33 +43,34 @@ export async function GET(req: NextRequest) {
       .where('status', '==', 'pending')
       .where('isApproved', '==', false)
       .orderBy('createdAt', 'desc');
-    
+
     const snapshot = await pendingQuery.get();
-    
+
     const pendingPosts = [];
     for (const doc of snapshot.docs) {
       const postData = doc.data();
-      
+
       // Get user info for each post
       const userDoc = await adminDb.collection('users').doc(postData.userId).get();
       const userData = userDoc.exists ? userDoc.data() : null;
-      
+
       pendingPosts.push({
         id: doc.id,
         ...postData,
+        createdAt: postData.createdAt.toDate().toISOString(),
         author: userData ? {
           id: postData.userId,
-          name: userData.name || 'İsimsiz Kullanıcı',
+          name: userData.displayName || 'İsimsiz Kullanıcı',
           email: userData.email
         } : null
       });
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       posts: pendingPosts,
-      total: pendingPosts.length 
+      total: pendingPosts.length
     });
-    
+
   } catch (error) {
     console.error('Error fetching pending posts:', error);
     return NextResponse.json({ error: 'Sunucu hatası.' }, { status: 500 });

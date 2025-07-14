@@ -47,7 +47,8 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
       router.push('/');
-    } catch (error: Error) {
+} catch (e: unknown) {
+      const error = e as { code?: string; message: string };
       console.error('Login error:', error);
       
       // Firebase Auth hata kodlarına göre detaylı mesajlar
@@ -96,7 +97,8 @@ export default function LoginPage() {
       // Google ile giriş sonrası doğum yılı kontrolü yapılacak
       // Bu kontrol auth-context'te yapılıyor
       router.push('/');
-    } catch (error: Error) {
+} catch (e: unknown) {
+      const error = e as { code?: string; message: string };
       console.error('Google login error:', error);
       
       // Google Sign-In hata kodlarına göre detaylı mesajlar
@@ -135,7 +137,7 @@ export default function LoginPage() {
             <Shield className="h-12 w-12 text-military-beige" />
           </Link>
           <h1 className="text-3xl font-bold text-white mb-2">Hoş Geldiniz</h1>
-          <p className="text-military-beige/80">MSÜ Rehber'e giriş yapın</p>
+          <p className="text-military-beige/80">MSÜ Rehber&apos;e giriş yapın</p>
         </div>
 
         <Card variant="elevated" className="backdrop-blur-sm bg-white/95 dark:bg-gray-900/95">

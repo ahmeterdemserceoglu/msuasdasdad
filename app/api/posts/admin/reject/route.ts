@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, adminAuth } from '@/app/lib/firebase-admin';
+import { adminDb } from '@/app/lib/firebase-admin';
 import { verifyAuth } from '@/app/lib/auth';
 import { FieldValue } from 'firebase-admin/firestore';
 

@@ -5,28 +5,30 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/app/lib/auth-context';
 import { useAdminNotifications } from '@/app/lib/useAdminNotifications';
-import { 
-  LayoutDashboard, 
-  FileText, 
-  Clock, 
-  Users, 
-  Flag, 
-  BarChart3, 
-  Settings, 
-  Menu, 
-  X, 
+import {
+  LayoutDashboard,
+  FileText,
+  Clock,
+  Users,
+  Flag,
+  BarChart3,
+  Settings,
+  Menu,
+  X,
   LogOut,
   ArrowLeft,
   Share2,
   CheckCircle,
   Shield,
-  Globe
+  Globe,
+  LucideIcon
 } from 'lucide-react';
+import Image from 'next/image';
 
 interface NavItem {
   name: string;
   href: string;
-  icon: React.ComponentType<any>;
+  icon: LucideIcon;
   badge?: number;
   category?: string;
 }
@@ -118,7 +120,7 @@ export default function AdminSidebar() {
   return (
     <>
       {isMobile && !isCollapsed && (
-        <div 
+        <div
           className="fixed inset-0 z-30 bg-gray-900/60 backdrop-blur-sm"
           onClick={() => setIsCollapsed(true)}
         />
@@ -129,7 +131,7 @@ export default function AdminSidebar() {
         ${isMobile ? 'w-72' : 'w-64'}
         ${isCollapsed && isMobile ? '-translate-x-full' : 'translate-x-0'}
       `}>
-        
+
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-800">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-to-br from-sky-500 to-blue-600 rounded-lg flex items-center justify-center">
@@ -149,7 +151,7 @@ export default function AdminSidebar() {
             <div className="relative">
               <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center">
                 {user?.photoURL ? (
-                  <img src={user.photoURL} alt="Admin" className="w-full h-full rounded-full object-cover" />
+                  <Image src={user.photoURL} alt="Admin" width={48} height={48} className="rounded-full object-cover" />
                 ) : (
                   <span className="text-lg font-semibold text-gray-300">
                     {getInitials(user?.displayName || user?.email || 'A')}
@@ -181,8 +183,8 @@ export default function AdminSidebar() {
                       onClick={() => isMobile && setIsCollapsed(true)}
                       className={`
                         flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200
-                        ${active 
-                          ? 'bg-blue-600/90 text-white shadow-lg' 
+                        ${active
+                          ? 'bg-blue-600/90 text-white shadow-lg'
                           : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                         }
                       `}
@@ -206,7 +208,7 @@ export default function AdminSidebar() {
         </nav>
 
         <div className="p-4 border-t border-gray-800 space-y-2">
-           <Link
+          <Link
             href="/"
             className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
           >

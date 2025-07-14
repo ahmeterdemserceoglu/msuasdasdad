@@ -1,12 +1,14 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/app/lib/auth-context';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, Edit3 } from 'lucide-react';
+import { ArrowLeft, Edit3, MapPin, Calendar, Grid3X3, Heart, MessageCircle, Eye, MoreHorizontal } from 'lucide-react';
 import XLayout from '@/app/components/layout/XLayout';
 import PostCard from '@/app/components/ui/PostCard';
+import { Post } from '@/app/types';
+import Image from 'next/image';
 
 interface UserData {
   uid: string;
@@ -23,25 +25,31 @@ interface UserStats {
   totalPosts: number;
   totalLikes: number;
   totalComments: number;
+  totalViews: number;
 }
 
 export default function ProfilePage() {
   const params = useParams();
   const router = useRouter();
   const userId = params.userId as string;
-  const { firebaseUser, userData: currentUserData } = useAuth();
+  const { user: currentUser } = useAuth();
 
   const [userData, setUserData] = useState<UserData | null>(null);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
+  const [likedPosts, setLikedPosts] = useState<Post[]>([]);
   const [userStats, setUserStats] = useState<UserStats>({
     totalPosts: 0,
     totalLikes: 0,
-    totalComments: 0
+    totalComments: 0,
+    totalViews: 0
   });
   const [loading, setLoading] = useState(true);
   const [postsLoading, setPostsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'posts' | 'about'>('posts');
-  const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [likedPostsLoading, setLikedPostsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'posts' | 'liked'>('posts');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  const isOwnProfile = useMemo(() => currentUser?.uid === userId, [currentUser, userId]);
 
   // Fetch user data
   useEffect(() => {
@@ -49,7 +57,7 @@ export default function ProfilePage() {
       try {
         setLoading(true);
         const response = await fetch(`/api/users/${userId}`);
-        
+
         if (!response.ok) {
           toast.error('Kullanıcı bulunamadı');
           router.push('/');
@@ -58,7 +66,6 @@ export default function ProfilePage() {
 
         const data = await response.json();
         setUserData(data.user);
-        setIsOwnProfile(firebaseUser?.uid === userId);
       } catch (error) {
         console.error('Error fetching user data:', error);
         toast.error('Kullanıcı bilgileri yüklenirken hata oluştu');
@@ -70,7 +77,7 @@ export default function ProfilePage() {
     if (userId) {
       fetchUserData();
     }
-  }, [userId, firebaseUser, router]);
+  }, [userId, router]);
 
   // Fetch user posts
   useEffect(() => {
@@ -78,23 +85,26 @@ export default function ProfilePage() {
       try {
         setPostsLoading(true);
         const response = await fetch(`/api/users/${userId}/posts`);
-        
+
         if (!response.ok) {
           console.error('Failed to fetch user posts');
           return;
         }
 
         const data = await response.json();
-        setUserPosts(data.posts || []);
-        
+        const posts: Post[] = data.posts || [];
+        setUserPosts(posts);
+
         // Calculate stats
-        const totalLikes = data.posts.reduce((sum: number, post: any) => sum + (post.likes || 0), 0);
-        const totalComments = data.posts.reduce((sum: number, post: any) => sum + (post.commentCount || 0), 0);
-        
+        const totalLikes = posts.reduce((sum, post) => sum + (post.likeCount || 0), 0);
+        const totalComments = posts.reduce((sum, post) => sum + (post.commentCount || 0), 0);
+        const totalViews = posts.reduce((sum, post) => sum + (post.viewCount || 0), 0);
+
         setUserStats({
-          totalPosts: data.posts.length,
+          totalPosts: posts.length,
           totalLikes,
-          totalComments
+          totalComments,
+          totalViews
         });
       } catch (error) {
         console.error('Error fetching user posts:', error);
@@ -108,11 +118,46 @@ export default function ProfilePage() {
     }
   }, [userId]);
 
+  // Fetch liked posts when tab changes
+  useEffect(() => {
+    const fetchLikedPosts = async () => {
+      if (activeTab !== 'liked' || !isOwnProfile) return;
+      
+      try {
+        setLikedPostsLoading(true);
+        const response = await fetch(`/api/users/${userId}/liked-posts`);
+
+        if (!response.ok) {
+          console.error('Failed to fetch liked posts');
+          return;
+        }
+
+        const data = await response.json();
+        setLikedPosts(data.posts || []);
+      } catch (error) {
+        console.error('Error fetching liked posts:', error);
+      } finally {
+        setLikedPostsLoading(false);
+      }
+    };
+
+    fetchLikedPosts();
+  }, [activeTab, userId, isOwnProfile]);
+
   const formatJoinDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('tr-TR', {
       month: 'long',
       year: 'numeric'
     });
+  };
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
   };
 
   if (loading) {
@@ -135,7 +180,7 @@ export default function ProfilePage() {
       <header className="sticky top-0 z-10 bg-[var(--background)]/90 backdrop-blur-md border-b border-[var(--border)]">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center space-x-3">
-            <button 
+            <button
               onClick={() => router.back()}
               className="p-2 hover:bg-[var(--card-hover)] rounded-full transition-colors"
             >
@@ -146,7 +191,7 @@ export default function ProfilePage() {
               <p className="text-sm text-[var(--muted)]">{userStats.totalPosts} paylaşım</p>
             </div>
           </div>
-          
+
           {isOwnProfile && (
             <button
               onClick={() => router.push('/settings/profile')}
@@ -162,25 +207,27 @@ export default function ProfilePage() {
       {/* Profile Info */}
       <div className="p-4 border-b border-[var(--border)]">
         <div className="flex items-start space-x-4 mb-4">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-bold">
+          <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-bold">
             {userData.photoURL ? (
-              <img 
-                src={userData.photoURL} 
-                alt={userData.displayName} 
+              <Image
+                src={userData.photoURL}
+                alt={userData.displayName}
                 className="w-20 h-20 rounded-full object-cover"
+                width={80}
+                height={80}
               />
             ) : (
               userData.displayName.charAt(0).toUpperCase()
             )}
           </div>
-          
+
           <div className="flex-1">
             <h2 className="text-xl font-bold mb-1">{userData.displayName}</h2>
             <p className="text-[var(--muted)] text-sm mb-2">@{userData.uid.slice(0, 8)}</p>
             {userData.bio && (
               <p className="text-[var(--foreground)] mb-3">{userData.bio}</p>
             )}
-            
+
             <div className="flex flex-wrap gap-4 text-sm text-[var(--muted)]">
               {userData.city && (
                 <div className="flex items-center space-x-1">
@@ -217,21 +264,19 @@ export default function ProfilePage() {
       <div className="flex border-b border-[var(--border)]">
         <button
           onClick={() => setActiveTab('posts')}
-          className={`flex-1 text-center font-semibold p-3 transition-colors ${
-            activeTab === 'posts'
-              ? 'border-b-2 border-[var(--primary)] text-[var(--primary)]'
-              : 'text-[var(--muted)] hover:bg-[var(--card-hover)]'
-          }`}
+          className={`flex-1 text-center font-semibold p-3 transition-colors ${activeTab === 'posts'
+            ? 'border-b-2 border-[var(--primary)] text-[var(--primary)]'
+            : 'text-[var(--muted)] hover:bg-[var(--card-hover)]'
+            }`}
         >
           Paylaşımlar
         </button>
         <button
           onClick={() => setActiveTab('about')}
-          className={`flex-1 text-center font-semibold p-3 transition-colors ${
-            activeTab === 'about'
-              ? 'border-b-2 border-[var(--primary)] text-[var(--primary)]'
-              : 'text-[var(--muted)] hover:bg-[var(--card-hover)]'
-          }`}
+          className={`flex-1 text-center font-semibold p-3 transition-colors ${activeTab === 'about'
+            ? 'border-b-2 border-[var(--primary)] text-[var(--primary)]'
+            : 'text-[var(--muted)] hover:bg-[var(--card-hover)]'
+            }`}
         >
           Hakkında
         </button>
@@ -252,21 +297,16 @@ export default function ProfilePage() {
                   <PostCard
                     key={post.id}
                     id={post.id}
-                    title={post.title}
-                    content={post.content}
-                    summary={post.summary}
+                    content={post.summary || post.content || ''}
                     userId={post.userId}
                     userName={post.userName}
                     userPhotoURL={post.userPhotoURL}
-                    interviewType={post.interviewType}
-                    candidateType={post.candidateType}
-                    city={post.city}
-                    tags={post.tags || []}
-                    likes={post.likes || 0}
-                    commentCount={post.commentCount || 0}
+                    tags={(post.tags as unknown as Record<string, string>) || {}}
+                    likes={post.likeCount}
+                    commentCount={post.commentCount}
                     viewCount={post.viewCount || 0}
-                    createdAt={post.createdAt}
-                    experienceDate={post.experienceDate}
+                    createdAt={new Date(post.createdAt).toString()}
+                    postType={post.interviewType}
                   />
                 ))}
               </div>
@@ -287,24 +327,24 @@ export default function ProfilePage() {
                   <p className="text-sm text-[var(--muted)] mb-1">İsim</p>
                   <p className="font-medium">{userData.displayName}</p>
                 </div>
-                
+
                 {userData.city && (
                   <div>
                     <p className="text-sm text-[var(--muted)] mb-1">Şehir</p>
                     <p className="font-medium">{userData.city}</p>
                   </div>
                 )}
-                
+
                 <div>
                   <p className="text-sm text-[var(--muted)] mb-1">Doğum Yılı</p>
                   <p className="font-medium">{userData.birthYear}</p>
                 </div>
-                
+
                 <div>
                   <p className="text-sm text-[var(--muted)] mb-1">Katılım Tarihi</p>
                   <p className="font-medium">{formatJoinDate(userData.createdAt)}</p>
                 </div>
-                
+
                 {userData.bio && (
                   <div>
                     <p className="text-sm text-[var(--muted)] mb-1">Biyografi</p>

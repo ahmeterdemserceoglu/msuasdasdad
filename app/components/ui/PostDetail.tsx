@@ -1,13 +1,13 @@
 'use client';
 
-import { 
-  Heart, 
-  MessageCircle, 
-  Share, 
-  MoreHorizontal, 
-  Calendar, 
-  MapPin, 
-  Tag, 
+import {
+  Heart,
+  MessageCircle,
+  Share,
+  MoreHorizontal,
+  Calendar,
+  MapPin,
+  Tag,
   Clock,
   User,
   ArrowLeft,
@@ -23,6 +23,7 @@ import { useAuth } from '@/app/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import CommentList from './CommentList';
+import Image from 'next/image';
 
 
 interface PostDetailProps {
@@ -72,14 +73,14 @@ export default function PostDetail({ postId }: PostDetailProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
-  
+
   const [isLiking, setIsLiking] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [viewCount, setViewCount] = useState(0);
   const [canEdit, setCanEdit] = useState(false);
-  
-  const { firebaseUser, userData } = useAuth();
+
+  const { firebaseUser, user } = useAuth();
   const router = useRouter();
 
   // Fetch post data
@@ -88,7 +89,7 @@ export default function PostDetail({ postId }: PostDetailProps) {
       try {
         setLoading(true);
         const response = await fetch(`/api/posts/${postId}`);
-        
+
         if (!response.ok) {
           if (response.status === 404) {
             setError('Post bulunamadı');
@@ -101,12 +102,12 @@ export default function PostDetail({ postId }: PostDetailProps) {
         const data = await response.json();
         setPost(data.post);
         setLikeCount(data.post.likes || 0);
-        
+
         // Track view
         const viewResponse = await fetch(`/api/posts/${postId}/views`, {
           method: 'POST'
         });
-        
+
         if (viewResponse.ok) {
           const viewData = await viewResponse.json();
           setViewCount(viewData.views);
@@ -114,7 +115,7 @@ export default function PostDetail({ postId }: PostDetailProps) {
           // Fallback to existing view count if available
           setViewCount(data.post.viewCount || 0);
         }
-      } catch (err: Error) {
+      } catch (err: unknown) {
         setError('Post yüklenirken hata oluştu');
         console.error('Error fetching post:', err);
       } finally {
@@ -129,7 +130,7 @@ export default function PostDetail({ postId }: PostDetailProps) {
   useEffect(() => {
     const checkLikeStatus = async () => {
       if (!firebaseUser || !post) return;
-      
+
       try {
         const token = await firebaseUser.getIdToken();
         const response = await fetch(`/api/posts/${postId}/like`, {
@@ -137,7 +138,7 @@ export default function PostDetail({ postId }: PostDetailProps) {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           setIsLiked(data.liked);
@@ -159,9 +160,9 @@ export default function PostDetail({ postId }: PostDetailProps) {
 
     // Check if user is the owner or admin
     const isOwner = post.userId === firebaseUser.uid;
-    const isAdmin = userData?.isAdmin === true;
+    const isAdmin = user?.isAdmin === true;
     setCanEdit(isOwner || isAdmin);
-  }, [post, firebaseUser, userData]);
+  }, [post, firebaseUser, user]);
 
   const handleLike = async () => {
     if (!firebaseUser) {
@@ -210,18 +211,18 @@ export default function PostDetail({ postId }: PostDetailProps) {
 
   const handleShare = async (type: 'copy' | 'external') => {
     const url = `${window.location.origin}/posts/${postId}`;
-    
+
     if (type === 'copy') {
       try {
         await navigator.clipboard.writeText(url);
         toast.success('Link kopyalandı');
-      } catch (error) {
+      } catch {
         toast.error('Link kopyalanamadı');
       }
     } else {
       window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(post?.title || '')}`, '_blank');
     }
-    
+
     setShowShareMenu(false);
   };
 
@@ -265,7 +266,7 @@ export default function PostDetail({ postId }: PostDetailProps) {
           <p className="text-[var(--muted)] mb-6">
             {error || 'Aradığınız post bulunamadı veya silinmiş olabilir.'}
           </p>
-          <button 
+          <button
             onClick={() => router.push('/')}
             className="btn-primary"
           >
@@ -283,7 +284,7 @@ export default function PostDetail({ postId }: PostDetailProps) {
         <div className="max-w-4xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <button 
+              <button
                 onClick={() => router.back()}
                 className="p-2 hover:bg-[var(--card-hover)] rounded-full transition-colors"
               >
@@ -294,13 +295,13 @@ export default function PostDetail({ postId }: PostDetailProps) {
                 <p className="text-sm text-[var(--muted)]">{post.userName}</p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               <div className="flex items-center space-x-1 text-[var(--muted)]">
                 <Eye size={16} />
                 <span className="text-sm">{viewCount}</span>
               </div>
-              
+
               {canEdit && (
                 <button
                   onClick={() => router.push(`/posts/${postId}/edit`)}
@@ -310,19 +311,19 @@ export default function PostDetail({ postId }: PostDetailProps) {
                   <span>Düzenle</span>
                 </button>
               )}
-              
+
               <div className="relative">
-                <button 
+                <button
                   onClick={() => setShowMoreMenu(!showMoreMenu)}
                   className="p-2 hover:bg-[var(--card-hover)] rounded-full transition-colors"
                 >
                   <MoreHorizontal size={20} className="text-[var(--muted)]" />
                 </button>
-                
+
                 {showMoreMenu && (
                   <div className="absolute right-0 top-12 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-lg z-10 py-2 min-w-[160px]">
                     {canEdit && (
-                      <button 
+                      <button
                         onClick={() => router.push(`/posts/${postId}/edit`)}
                         className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-[var(--card-hover)] transition-colors"
                       >
@@ -357,10 +358,12 @@ export default function PostDetail({ postId }: PostDetailProps) {
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white">
                     {post.userPhotoURL ? (
-                      <img 
-                        src={post.userPhotoURL} 
-                        alt={post.userName} 
-                        className="w-12 h-12 rounded-full object-cover" 
+                      <Image
+                        src={post.userPhotoURL}
+                        alt={post.userName}
+                        width={48}
+                        height={48}
+                        className="w-12 h-12 rounded-full object-cover"
                       />
                     ) : (
                       <span className="font-semibold text-lg">
@@ -448,19 +451,18 @@ export default function PostDetail({ postId }: PostDetailProps) {
                   <button
                     onClick={handleLike}
                     disabled={isLiking}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-colors ${
-                      isLiked 
-                        ? 'bg-red-50 text-red-500 hover:bg-red-100' 
-                        : 'hover:bg-[var(--card-hover)] text-[var(--muted)]'
-                    }`}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-colors ${isLiked
+                      ? 'bg-red-50 text-red-500 hover:bg-red-100'
+                      : 'hover:bg-[var(--card-hover)] text-[var(--muted)]'
+                      }`}
                   >
-                    <Heart 
-                      size={20} 
-                      className={isLiked ? 'fill-current' : ''} 
+                    <Heart
+                      size={20}
+                      className={isLiked ? 'fill-current' : ''}
                     />
                     <span className="font-medium">{likeCount}</span>
                   </button>
-                  
+
                   <div className="flex items-center space-x-2 px-4 py-2 text-[var(--muted)]">
                     <MessageCircle size={20} />
                     <span className="font-medium">{post.commentCount}</span>
@@ -468,29 +470,29 @@ export default function PostDetail({ postId }: PostDetailProps) {
                 </div>
 
                 <div className="relative">
-                  <button 
+                  <button
                     onClick={() => setShowShareMenu(!showShareMenu)}
                     className="flex items-center space-x-2 px-4 py-2 rounded-full hover:bg-[var(--card-hover)] text-[var(--muted)] transition-colors"
                   >
                     <Share size={20} />
                     <span className="font-medium">Paylaş</span>
                   </button>
-                  
+
                   {showShareMenu && (
                     <div className="absolute right-0 top-12 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-lg z-10 py-2 min-w-[160px]">
-                      <button 
+                      <button
                         onClick={() => handleShare('copy')}
                         className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-[var(--card-hover)] transition-colors"
                       >
                         <Copy size={16} />
                         <span>Linki Kopyala</span>
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleShare('external')}
                         className="flex items-center space-x-3 w-full px-4 py-2 text-sm hover:bg-[var(--card-hover)] transition-colors"
                       >
                         <ExternalLink size={16} />
-                        <span>Twitter'da Paylaş</span>
+                        <span>Twitter&apos;da Paylaş</span>
                       </button>
                     </div>
                   )}
@@ -514,10 +516,12 @@ export default function PostDetail({ postId }: PostDetailProps) {
                 <div className="flex items-center space-x-3 mb-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white">
                     {post.userPhotoURL ? (
-                      <img 
-                        src={post.userPhotoURL} 
-                        alt={post.userName} 
-                        className="w-10 h-10 rounded-full object-cover" 
+                      <Image
+                        src={post.userPhotoURL}
+                        alt={post.userName}
+                        width={40}
+                        height={40}
+                        className="w-10 h-10 rounded-full object-cover"
                       />
                     ) : (
                       <span className="font-semibold">
@@ -533,7 +537,7 @@ export default function PostDetail({ postId }: PostDetailProps) {
                 <p className="text-sm text-[var(--muted)] mb-4">
                   MSÜ mülakat sürecinde deneyimlerini paylaşan bir aday.
                 </p>
-                <button 
+                <button
                   className="w-full btn-secondary text-sm"
                   onClick={() => router.push(`/profile/${post.userId}`)}
                 >

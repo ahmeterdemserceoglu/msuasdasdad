@@ -4,8 +4,8 @@ import { useEffect, useState, Fragment, useCallback } from 'react';
 import { useAuth } from '@/app/lib/auth-context';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { 
-    CheckCircle, XCircle, Search, Inbox, 
+import {
+    CheckCircle, XCircle, Search, Inbox,
     FileText, Eye, ShieldCheck, ShieldOff, Flag, Users, Clock, Calendar
 } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
@@ -61,8 +61,12 @@ export default function AdminReportsPage() {
             if (!response.ok) throw new Error('Raporlar yüklenemedi.');
             const data = await response.json();
             setReports(data.reports || []);
-        } catch (error: Error) {
-            toast.error(error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                toast.error(error.message);
+            } else {
+                toast.error("An unknown error occurred while fetching reports.");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -77,7 +81,7 @@ export default function AdminReportsPage() {
         }
         if (firebaseUser) fetchReports();
     }, [user, firebaseUser, loading, router, fetchReports]);
-        
+
 
     const handleAction = async (reportId: string, action: 'resolved' | 'dismissed') => {
         if (!firebaseUser) return;
@@ -93,15 +97,19 @@ export default function AdminReportsPage() {
             setReports(prev => prev.map(r => r.id === reportId ? updatedReport.report : r));
             setSelectedReport(updatedReport.report);
             toast.success(`Rapor ${action === 'resolved' ? 'çözüldü' : 'reddedildi'} olarak işaretlendi.`);
-        } catch (error: Error) {
-            toast.error(error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                toast.error(error.message);
+            } else {
+                toast.error("An unknown error occurred while handling the report action.");
+            }
         }
     };
 
-    const filteredReports = reports.filter(report => 
+    const filteredReports = reports.filter(report =>
         (!filters.status || report.status === filters.status) &&
         (!filters.reason || report.reason === filters.reason) &&
-        (!filters.search || 
+        (!filters.search ||
             report.postTitle?.toLowerCase().includes(filters.search.toLowerCase()) ||
             report.reporterName?.toLowerCase().includes(filters.search.toLowerCase()) ||
             report.postAuthorName?.toLowerCase().includes(filters.search.toLowerCase())
@@ -127,7 +135,7 @@ export default function AdminReportsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="relative">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                            <input 
+                            <input
                                 type="text"
                                 placeholder="Başlık, raporlayan, gönderen..."
                                 value={filters.search}

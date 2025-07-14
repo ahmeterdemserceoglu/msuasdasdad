@@ -18,8 +18,9 @@ import {
   orderBy,
   addDoc,
   writeBatch,
+  Timestamp,
 } from "firebase/firestore";
-import { MessageCircle, UserPlus, Check, X, Send } from "lucide-react";
+import { MessageCircle, Check, X, Send } from "lucide-react";
 
 // Project-specific imports
 import { useAuth } from "@/app/lib/auth-context";
@@ -54,7 +55,7 @@ interface Message {
   id: string;
   text: string;
   senderId: string;
-  timestamp: firebase.firestore.Timestamp; // Consider using a more specific type like firebase.firestore.Timestamp
+  timestamp: Timestamp; // Consider using a more specific type like firebase.firestore.Timestamp
 }
 
 export default function FriendsPage() {
@@ -90,7 +91,7 @@ export default function FriendsPage() {
       snapshot.docs.forEach((doc) => {
         console.log('Friend request document:', doc.id, doc.data());
       });
-      
+
       const requestsPromises = snapshot.docs.map(async (docSnapshot) => {
         const data = docSnapshot.data();
         console.log('Processing request from:', data.from, 'to:', data.to, 'status:', data.status);
@@ -120,20 +121,20 @@ export default function FriendsPage() {
         const friendsList = userData.friends || [];
 
         if (friendsList.length > 0) {
-            const friendsPromises = friendsList.map((friendId: string) =>
-              getDoc(doc(db, "users", friendId))
-            );
-    
-            Promise.all(friendsPromises).then((friendDocs) => {
-              const friendsData = friendDocs
-                .filter((doc) => doc.exists())
-                .map((doc) => ({ id: doc.id, ...doc.data() } as UserProfile));
-              setFriends(friendsData);
-              setDataLoading(false);
-            });
-        } else {
-            setFriends([]);
+          const friendsPromises = friendsList.map((friendId: string) =>
+            getDoc(doc(db, "users", friendId))
+          );
+
+          Promise.all(friendsPromises).then((friendDocs) => {
+            const friendsData = friendDocs
+              .filter((doc) => doc.exists())
+              .map((doc) => ({ id: doc.id, ...doc.data() } as UserProfile));
+            setFriends(friendsData);
             setDataLoading(false);
+          });
+        } else {
+          setFriends([]);
+          setDataLoading(false);
         }
       } else {
         setDataLoading(false);
@@ -157,7 +158,7 @@ export default function FriendsPage() {
           where('status', '==', 'pending'),
           where('read', '==', false)
         );
-        
+
         try {
           const snapshot = await getDocs(q);
           snapshot.docs.forEach(doc => {
@@ -168,7 +169,7 @@ export default function FriendsPage() {
           console.error('Error marking requests as read:', error);
         }
       };
-      
+
       markRequestsAsRead();
     }
   }, [selectedTab, user]);
@@ -196,7 +197,7 @@ export default function FriendsPage() {
 
   const handleAcceptRequest = async (requestId: string, fromUserId: string) => {
     if (!user || !firebaseUser) return;
-    
+
     try {
       const token = await firebaseUser.getIdToken();
 
@@ -206,9 +207,9 @@ export default function FriendsPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
-          requestId, 
-          fromUserId, 
+        body: JSON.stringify({
+          requestId,
+          fromUserId,
           toUserId: user.uid
         }),
       });
@@ -249,7 +250,7 @@ export default function FriendsPage() {
     }
 
     const chatId = [user.uid, selectedFriend.id].sort().join("_");
-    
+
     try {
       // Chat dokümanını oluştur/güncelle
       const chatRef = doc(db, "chats", chatId);
@@ -311,9 +312,8 @@ export default function FriendsPage() {
                         {friends.map((friend) => (
                           <div
                             key={friend.id}
-                            className={`flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors ${
-                              selectedFriend?.id === friend.id ? "bg-gray-100" : ""
-                            }`}
+                            className={`flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors ${selectedFriend?.id === friend.id ? "bg-gray-100" : ""
+                              }`}
                             onClick={() => setSelectedFriend(friend)}
                           >
                             <div className="flex items-center gap-3">
@@ -422,16 +422,14 @@ export default function FriendsPage() {
                     {user && messages.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex ${
-                          message.senderId === user.uid ? "justify-end" : "justify-start"
-                        }`}
+                        className={`flex ${message.senderId === user.uid ? "justify-end" : "justify-start"
+                          }`}
                       >
                         <div
-                          className={`max-w-[70%] rounded-lg p-3 ${
-                            message.senderId === user.uid
-                              ? "bg-blue-500 text-white"
-                              : "bg-gray-200 text-gray-900"
-                          }`}
+                          className={`max-w-[70%] rounded-lg p-3 ${message.senderId === user.uid
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-200 text-gray-900"
+                            }`}
                         >
                           <p>{message.text}</p>
                           <p className="text-xs mt-1 opacity-70">

@@ -11,7 +11,7 @@ export async function GET(
   try {
     // Await params before accessing postId
     const { postId } = await params;
-    
+
     // Get query parameters for pagination
     const { searchParams } = new URL(req.url);
     const limitParam = searchParams.get('limit') || '10';
@@ -20,12 +20,12 @@ export async function GET(
 
     // Check if post exists
     const postDoc = await adminDb.collection('posts').doc(postId).get();
-    
+
     if (!postDoc.exists) {
       return NextResponse.json({ error: 'Post bulunamadı' }, { status: 404 });
     }
 
-    // Build comments query
+    // Build comments query - only get top-level comments (where parentId doesn't exist)
     let commentsQuery = adminDb
       .collection('posts')
       .doc(postId)
@@ -41,7 +41,7 @@ export async function GET(
         .collection('comments')
         .doc(startAfterParam)
         .get();
-      
+
       if (startAfterDoc.exists) {
         commentsQuery = commentsQuery.startAfter(startAfterDoc);
       }
@@ -54,20 +54,25 @@ export async function GET(
     for (const commentDoc of commentsSnapshot.docs) {
       const commentData = commentDoc.data();
       
+      // Skip if this is a reply (has parentId)
+      if (commentData.parentId) {
+        continue;
+      }
+
       try {
         // Get user data for each comment
         const userDoc = await adminDb.collection('users').doc(commentData.userId).get();
         const userData = userDoc.data();
-        
+
         comments.push({
           id: commentDoc.id,
           postId: postId,
           userId: commentData.userId,
           userName: userData?.displayName || 'Anonim Kullanıcı',
-          userPhotoURL: userData?.photoURL || null,
+          userPhotoURL: userData?.photoURL ?? undefined,
           content: commentData.content,
           likeCount: commentData.likeCount || 0,
-          parentId: commentData.parentId || undefined,
+          parentId: commentData.parentId,
           replyCount: commentData.replyCount || 0,
           createdAt: commentData.createdAt?.toDate() || new Date()
         });
@@ -79,10 +84,10 @@ export async function GET(
           postId: postId,
           userId: commentData.userId,
           userName: 'Anonim Kullanıcı',
-          userPhotoURL: null,
+          userPhotoURL: undefined,
           content: commentData.content,
           likeCount: commentData.likeCount || 0,
-          parentId: commentData.parentId || undefined,
+          parentId: commentData.parentId,
           replyCount: commentData.replyCount || 0,
           createdAt: commentData.createdAt?.toDate() || new Date()
         });
@@ -93,11 +98,21 @@ export async function GET(
     const hasMore = commentsSnapshot.size === limit;
     const lastCommentId = commentsSnapshot.docs[commentsSnapshot.docs.length - 1]?.id;
 
+    // Get total comment count (including replies)
+    const totalCommentsSnapshot = await adminDb
+      .collection('posts')
+      .doc(postId)
+      .collection('comments')
+      .count()
+      .get();
+    
+    const totalCount = totalCommentsSnapshot.data().count;
+
     return NextResponse.json({
       comments,
       hasMore,
       lastCommentId,
-      total: commentsSnapshot.size
+      total: totalCount
     });
 
   } catch (error) {
@@ -133,13 +148,13 @@ export async function POST(
     }
 
     const userId = decodedToken.uid;
-    
+
     // Await params before accessing postId
     const { postId } = await params;
-    
+
     // Get comment content from request body
     const { content } = await req.json();
-    
+
     if (!content || content.trim() === '') {
       return NextResponse.json({ error: 'Yorum içeriği boş olamaz' }, { status: 400 });
     }
@@ -147,7 +162,7 @@ export async function POST(
     // Check if post exists
     const postRef = adminDb.collection('posts').doc(postId);
     const postDoc = await postRef.get();
-    
+
     if (!postDoc.exists) {
       return NextResponse.json({ error: 'Post bulunamadı' }, { status: 404 });
     }
@@ -198,14 +213,14 @@ export async function POST(
       postId: postId,
       userId,
       userName: userData?.displayName || 'Anonim Kullanıcı',
-      userPhotoURL: userData?.photoURL || null,
+      userPhotoURL: userData?.photoURL ?? undefined,
       content: content.trim(),
       likeCount: 0,
       replyCount: 0,
       createdAt: new Date()
     };
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       comment: newComment
     }, { status: 201 });
@@ -243,13 +258,13 @@ export async function DELETE(
     }
 
     const userId = decodedToken.uid;
-    
+
     // Await params before accessing postId
     const { postId } = await params;
-    
+
     // Get comment ID from request body
     const { commentId } = await req.json();
-    
+
     if (!commentId) {
       return NextResponse.json({ error: 'Yorum ID\'si gerekli' }, { status: 400 });
     }
@@ -257,7 +272,7 @@ export async function DELETE(
     // Check if post exists
     const postRef = adminDb.collection('posts').doc(postId);
     const postDoc = await postRef.get();
-    
+
     if (!postDoc.exists) {
       return NextResponse.json({ error: 'Post bulunamadı' }, { status: 404 });
     }
@@ -268,9 +283,9 @@ export async function DELETE(
       .doc(postId)
       .collection('comments')
       .doc(commentId);
-    
+
     const commentDoc = await commentRef.get();
-    
+
     if (!commentDoc.exists) {
       return NextResponse.json({ error: 'Yorum bulunamadı' }, { status: 404 });
     }
@@ -300,7 +315,7 @@ export async function DELETE(
       commentCount: FieldValue.increment(-1)
     });
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       message: 'Yorum başarıyla silindi'
     });

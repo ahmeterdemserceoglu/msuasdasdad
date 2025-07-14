@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, query, where, getDocs, Timestamp, doc, getDoc, setDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, Timestamp, doc, getDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '@/app/lib/firebase';
 import { useAuth } from '@/app/lib/auth-context';
 import { User } from '@/app/types';
@@ -11,6 +11,7 @@ import XLayout from '@/app/components/layout/XLayout';
 import Card from '@/app/components/ui/Card';
 import Button from '@/app/components/ui/Button';
 import { toast } from 'react-hot-toast';
+import Image from 'next/image';
 
 const CANDIDATE_TYPE_LABELS = {
   'subay': 'Subay',
@@ -26,7 +27,7 @@ export default function InterviewBuddyPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string>('');
-  
+
   const [friendshipStatus, setFriendshipStatus] = useState<Map<string, 'none' | 'pending' | 'accepted' | 'rejected'>>(
     new Map()
   );
@@ -34,10 +35,10 @@ export default function InterviewBuddyPage() {
   useEffect(() => {
     // Kullanıcının kendi mülakat tarihini al
     if (currentUser?.interviewDate) {
-      const date = currentUser.interviewDate instanceof Date 
-        ? currentUser.interviewDate 
+      const date = currentUser.interviewDate instanceof Date
+        ? currentUser.interviewDate
         : new Date(currentUser.interviewDate);
-      
+
       if (!isNaN(date.getTime())) {
         const dateStr = date.toISOString().split('T')[0];
         setSelectedDate(dateStr);
@@ -47,7 +48,7 @@ export default function InterviewBuddyPage() {
 
   // Arkadaşlık durumunu kontrol eden fonksiyon
   const checkFriendshipStatus = async (
-    fromUserId: string, 
+    fromUserId: string,
     toUserId: string
   ): Promise<'none' | 'pending' | 'accepted' | 'rejected'> => {
     try {
@@ -67,7 +68,7 @@ export default function InterviewBuddyPage() {
         where('to', '==', toUserId)
       );
       const forwardSnapshot = await getDocs(forwardRequestQuery);
-      
+
       if (!forwardSnapshot.empty) {
         const requestData = forwardSnapshot.docs[0].data();
         return requestData.status;
@@ -80,7 +81,7 @@ export default function InterviewBuddyPage() {
         where('to', '==', fromUserId)
       );
       const reverseSnapshot = await getDocs(reverseRequestQuery);
-      
+
       if (!reverseSnapshot.empty) {
         const requestData = reverseSnapshot.docs[0].data();
         return requestData.status;
@@ -105,7 +106,7 @@ export default function InterviewBuddyPage() {
         // Seçilen tarihin başlangıç ve bitiş zamanlarını oluştur
         const startDate = new Date(selectedDate);
         startDate.setHours(0, 0, 0, 0);
-        
+
         const endDate = new Date(selectedDate);
         endDate.setHours(23, 59, 59, 999);
 
@@ -117,7 +118,7 @@ export default function InterviewBuddyPage() {
 
         const querySnapshot = await getDocs(usersQuery);
         const fetchedUsers: User[] = [];
-        
+
         querySnapshot.forEach((doc) => {
           const userData = doc.data() as User;
           // Kendi kendini gösterme
@@ -130,17 +131,17 @@ export default function InterviewBuddyPage() {
         });
 
         setUsers(fetchedUsers);
-        
+
         // Arkadaşlık durumlarını kontrol et
         if (firebaseUser && fetchedUsers.length > 0) {
           const statusMap = new Map<string, 'none' | 'pending' | 'accepted' | 'rejected'>();
-          
+
           // Her kullanıcı için arkadaşlık durumunu kontrol et
           for (const user of fetchedUsers) {
             const status = await checkFriendshipStatus(firebaseUser.uid, user.uid);
             statusMap.set(user.uid, status);
           }
-          
+
           setFriendshipStatus(statusMap);
         }
       } catch (error) {
@@ -160,11 +161,11 @@ export default function InterviewBuddyPage() {
       toast.error('Giriş yapmanız gerekiyor');
       return;
     }
-    
+
     // Checking friendship status
     const status = await checkFriendshipStatus(firebaseUser.uid, targetUserId);
     console.log('Current friendship status:', status);
-    
+
     if (status === 'none') {
       try {
         const requestData = {
@@ -174,31 +175,32 @@ export default function InterviewBuddyPage() {
           read: false,
           createdAt: serverTimestamp()
         };
-        
+
         console.log('Sending friend request with data:', requestData);
-        
+
         const docRef = await addDoc(collection(db, 'friendRequests'), requestData);
-        
+
         console.log('Friend request created with ID:', docRef.id);
-        
+
         toast.success('Arkadaşlık isteği gönderildi!');
-        
+
         // UI güncelleme
         setFriendshipStatus(prev => {
           const newMap = new Map(prev);
           newMap.set(targetUserId, 'pending');
           return newMap;
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error sending friend request:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-        
-        if (error.code === 'permission-denied') {
-          toast.error('İzin hatası: Firestore kurallarını kontrol edin');
-        } else {
-          toast.error(`Arkadaşlık isteği gönderilemedi: ${error.message}`);
+
+        let errorMessage = 'Arkadaşlık isteği gönderilemedi.';
+        if (error instanceof Error) {
+          errorMessage = `Arkadaşlık isteği gönderilemedi: ${error.message}`;
+          if ('code' in error && error.code === 'permission-denied') {
+            errorMessage = 'İzin hatası: Firestore kurallarını kontrol edin.';
+          }
         }
+        toast.error(errorMessage);
       }
     } else if (status === 'pending') {
       toast('İstek zaten gönderildi', { icon: '⏳' });
@@ -216,15 +218,6 @@ export default function InterviewBuddyPage() {
     }
     // Arkadaşlar sayfasına yönlendir
     router.push('/friends');
-  };
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('tr-TR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
   };
 
   return (
@@ -293,23 +286,27 @@ export default function InterviewBuddyPage() {
                     {/* Kullanıcı Başlığı */}
                     <div className="flex items-center mb-4">
                       <div className="flex items-center space-x-3 flex-1">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-md overflow-hidden">
+                        <div className="flex-shrink-0">
                           {user.photoURL ? (
-                            <img 
-                              src={user.photoURL} 
-                              alt={user.displayName} 
-                              className="w-12 h-12 rounded-full object-cover" 
+                            <Image
+                              src={user.photoURL}
+                              alt={user.displayName || 'Profil'}
+                              width={48}
+                              height={48}
+                              className="w-12 h-12 rounded-full object-cover"
                             />
                           ) : (
-                            <span className="font-semibold text-lg">
-                              {user.displayName?.charAt(0).toUpperCase() || 'A'}
-                            </span>
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                              <span className="text-white font-bold text-lg">
+                                {user.displayName?.charAt(0).toUpperCase() || 'U'}
+                              </span>
+                            </div>
                           )}
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-[var(--foreground)]">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-[var(--foreground)] truncate">
                             {user.displayName}
-                          </h3>
+                          </p>
                           <div className="flex items-center space-x-2 text-sm text-[var(--muted)]">
                             {user.isOnline && (
                               <>
@@ -330,14 +327,14 @@ export default function InterviewBuddyPage() {
                           <span>{CANDIDATE_TYPE_LABELS[user.interviewBranch] || user.interviewBranch}</span>
                         </div>
                       )}
-                      
+
                       {user.interviewCity && (
                         <div className="flex items-center space-x-2 text-sm text-[var(--muted)]">
                           <MapPin className="w-4 h-4" />
                           <span>{user.interviewCity}</span>
                         </div>
                       )}
-                      
+
                       <div className="flex items-center space-x-2 text-sm text-[var(--muted)]">
                         <Calendar className="w-4 h-4" />
                         <span>Yaş: {new Date().getFullYear() - user.birthYear}</span>
@@ -355,9 +352,9 @@ export default function InterviewBuddyPage() {
                       >
                         <UserPlus className="w-4 h-4 mr-2" />
                         {friendshipStatus.get(user.uid) === 'accepted' ? 'Arkadaş' :
-                         friendshipStatus.get(user.uid) === 'pending' ? 'İstek Gönderildi' :
-                         friendshipStatus.get(user.uid) === 'rejected' ? 'Reddedildi' :
-                         'Arkadaş Ekle'}
+                          friendshipStatus.get(user.uid) === 'pending' ? 'İstek Gönderildi' :
+                            friendshipStatus.get(user.uid) === 'rejected' ? 'Reddedildi' :
+                              'Arkadaş Ekle'}
                       </Button>
                       {friendshipStatus.get(user.uid) === 'accepted' && (
                         <Button

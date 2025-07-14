@@ -42,7 +42,7 @@ export default function AdminPendingPostsPage() {
                     'Content-Type': 'application/json',
                 },
             });
-            
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Bekleyen gönderiler alınamadı.');
@@ -50,8 +50,12 @@ export default function AdminPendingPostsPage() {
 
             const data = await response.json();
             setPosts(data.posts || []);
-        } catch (error: Error) {
-            toast.error(error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                toast.error(error.message);
+            } else {
+                toast.error("An unknown error occurred while fetching pending posts.");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -76,9 +80,9 @@ export default function AdminPendingPostsPage() {
             }
 
             const token = await firebaseUser.getIdToken();
-            
+
             console.log('PostId:', postId);
-            
+
             const response = await fetch(`/api/posts/admin/${action}`, {
                 method: 'POST',
                 headers: {
@@ -100,13 +104,17 @@ export default function AdminPendingPostsPage() {
 
             toast.success(`Gönderi ${actionTexts[action]}.`);
             fetchPendingPosts();
-        } catch (error: Error) {
-            toast.error(error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                toast.error(error.message);
+            } else {
+                toast.error("An unknown error occurred during the post action.");
+            }
         }
     };
 
     const filteredPosts = posts.filter(post =>
-        !searchTerm || 
+        !searchTerm ||
         post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.author.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -185,7 +193,7 @@ export default function AdminPendingPostsPage() {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
                                 <Button
                                     onClick={() => handlePostAction(post.id, 'approve')}
@@ -206,13 +214,13 @@ export default function AdminPendingPostsPage() {
                     <Card className="p-8 text-center">
                         <div className="text-6xl mb-4">🎉</div>
                         <p className="text-gray-500 text-lg">
-                            {posts.length === 0 
-                                ? 'Harika! Bekleyen gönderi bulunmuyor.' 
+                            {posts.length === 0
+                                ? 'Harika! Bekleyen gönderi bulunmuyor.'
                                 : 'Arama kriterlerine uygun gönderi bulunamadı.'}
                         </p>
                         {searchTerm && (
                             <p className="text-gray-400 mt-2">
-                                "{searchTerm}" araması için sonuç bulunamadı.
+                                &quot;{searchTerm}&quot; araması için sonuç bulunamadı.
                             </p>
                         )}
                     </Card>

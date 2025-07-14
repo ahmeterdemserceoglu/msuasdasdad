@@ -6,15 +6,16 @@ import { useAuth } from '@/app/lib/auth-context';
 import { toast } from 'react-hot-toast';
 import { Comment as CommentType } from '@/app/types';
 import ReplyForm from './ReplyForm';
+import Image from 'next/image';
 
 interface CommentProps {
   comment: CommentType;
   postId: string;
   onCommentDeleted?: (commentId: string) => void;
-  level?: number; // For nested display (0 = main comment, 1 = reply)
+  isReply?: boolean; // To indicate if this is a reply
 }
 
-export default function Comment({ comment, postId, onCommentDeleted, level = 0 }: CommentProps) {
+export default function Comment({ comment, postId, onCommentDeleted, isReply = false }: CommentProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
@@ -25,7 +26,7 @@ export default function Comment({ comment, postId, onCommentDeleted, level = 0 }
   const [replies, setReplies] = useState<CommentType[]>([]);
   const [replyCount, setReplyCount] = useState(comment.replyCount || 0);
   const [loadingReplies, setLoadingReplies] = useState(false);
-  const { firebaseUser, userData } = useAuth();
+  const { firebaseUser, user } = useAuth();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -50,7 +51,7 @@ export default function Comment({ comment, postId, onCommentDeleted, level = 0 }
     // Check if current user liked this comment
     const checkLikeStatus = async () => {
       if (!firebaseUser) return;
-      
+
       try {
         const token = await firebaseUser.getIdToken();
         const response = await fetch(`/api/posts/${postId}/comments/${comment.id}/like`, {
@@ -58,7 +59,7 @@ export default function Comment({ comment, postId, onCommentDeleted, level = 0 }
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           setIsLiked(data.liked);
@@ -72,8 +73,8 @@ export default function Comment({ comment, postId, onCommentDeleted, level = 0 }
   }, [comment.id, comment.likeCount, postId, firebaseUser]);
 
   const fetchReplies = async () => {
-    if (level > 0 || !replyCount) return; // Only main comments can have replies
-    
+    if (!replyCount || isReply) return; // Don't fetch replies for replies
+
     setLoadingReplies(true);
     try {
       const response = await fetch(`/api/posts/${postId}/comments/${comment.id}/replies`);
@@ -202,21 +203,43 @@ export default function Comment({ comment, postId, onCommentDeleted, level = 0 }
     }
   };
 
-  // Kullanıcı kendi yorumunu veya admin tüm yorumları silebilir
+  const processCommentContent = (text: string) => {
+    const regex = /@([\p{L}\p{N}_\s]+?)(?=[\s.,!?]|$)/gu;
+    const parts = text.split(regex);
+
+    return parts.map((part, index) => {
+      if (index % 2 === 1) {
+        // This is a username
+        return (
+          <a
+            key={index}
+            href={`/profile/${part}`}
+            className="text-blue-500 hover:underline"
+            onClick={(e) => e.stopPropagation()}>
+            @{part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   const canDelete = firebaseUser && (
-    firebaseUser.uid === comment.userId || 
-    userData?.isAdmin === true
+    firebaseUser.uid === comment.userId ||
+    user?.isAdmin === true
   );
 
   return (
-    <div className="flex space-x-3 p-3 hover:bg-[var(--card-hover)] rounded-lg transition-colors">
+    <div className="flex space-x-3">
       {/* User Avatar */}
       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white flex-shrink-0">
         {comment.userPhotoURL ? (
-          <img 
-            src={comment.userPhotoURL} 
-            alt={comment.userName} 
-            className="w-8 h-8 rounded-full object-cover" 
+          <Image
+            src={comment.userPhotoURL}
+            alt={comment.userName}
+            width={32}
+            height={32}
+            className="w-8 h-8 rounded-full object-cover"
           />
         ) : (
           <span className="font-semibold text-sm">
@@ -232,6 +255,11 @@ export default function Comment({ comment, postId, onCommentDeleted, level = 0 }
             <h4 className="font-medium text-sm text-[var(--foreground)]">
               {comment.userName}
             </h4>
+            {comment.parentId && (
+              <span className="text-xs text-[var(--muted)] bg-[var(--card-hover)] px-2 py-0.5 rounded">
+                yanıt
+              </span>
+            )}
             <span className="text-xs text-[var(--muted)]">
               {formatDate(comment.createdAt)}
             </span>
@@ -246,17 +274,20 @@ export default function Comment({ comment, postId, onCommentDeleted, level = 0 }
               >
                 <MoreHorizontal size={16} className="text-[var(--muted)]" />
               </button>
-
               {showActions && (
-                <div className="absolute right-0 top-8 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-lg z-10 py-1 min-w-[120px]">
-                  <button
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                    className="flex items-center space-x-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-                  >
-                    <Trash2 size={14} />
-                    <span>{isDeleting ? 'Siliniyor...' : 'Sil'}</span>
-                  </button>
+                <div className="absolute right-0 top-full mt-2 w-32 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-lg z-10">
+                  <ul>
+                    <li>
+                      <button
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="flex items-center w-full px-3 py-2 text-sm text-red-500 hover:bg-[var(--card-hover)]"
+                      >
+                        <Trash2 size={14} className="mr-2" />
+                        {isDeleting ? 'Siliniyor...' : 'Sil'}
+                      </button>
+                    </li>
+                  </ul>
                 </div>
               )}
             </div>
@@ -264,93 +295,71 @@ export default function Comment({ comment, postId, onCommentDeleted, level = 0 }
         </div>
 
         {/* Comment Text */}
-        <p className="text-sm text-[var(--foreground)] mt-1 leading-relaxed">
-          {comment.content}
+        <p className="text-sm text-[var(--foreground)] mt-1 whitespace-pre-wrap">
+          {processCommentContent(comment.content)}
         </p>
 
-        {/* Comment Actions */}
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={handleLike}
-              disabled={isLiking}
-              className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
-                isLiked 
-                  ? 'bg-red-50 text-red-500 hover:bg-red-100' 
-                  : 'hover:bg-[var(--card-hover)] text-[var(--muted)]'
-              }`}
-            >
-              <Heart 
-                size={14} 
-                className={isLiked ? 'fill-current' : ''} 
-              />
-              {likeCount > 0 && (
-                <span className="font-medium">{likeCount}</span>
-              )}
-            </button>
+        {/* Comment Actions: Like, Reply */}
+        <div className="flex items-center space-x-4 mt-2 text-xs text-[var(--muted)]">
+          <button
+            onClick={handleLike}
+            disabled={isLiking}
+            className={`flex items-center space-x-1 hover:text-[var(--primary)] transition-colors ${isLiked ? 'text-[var(--primary)]' : ''}`}
+          >
+            <Heart size={14} fill={isLiked ? 'currentColor' : 'none'} />
+            <span>{likeCount} Beğeni</span>
+          </button>
 
-            {/* Reply button - only for main comments */}
-            {level === 0 && (
-              <button
-                onClick={() => setShowReplyForm(!showReplyForm)}
-                className="flex items-center space-x-1 px-2 py-1 rounded-full text-xs hover:bg-[var(--card-hover)] text-[var(--muted)] transition-colors"
-              >
-                <MessageCircle size={14} />
-                <span>Yanıtla</span>
-              </button>
-            )}
-
-            {/* Show replies button */}
-            {level === 0 && replyCount > 0 && (
-              <button
-                onClick={handleToggleReplies}
-                className="flex items-center space-x-1 px-2 py-1 rounded-full text-xs hover:bg-[var(--card-hover)] text-[var(--primary)] transition-colors"
-              >
-                <ChevronDown 
-                  size={14} 
-                  className={`transition-transform ${showReplies ? 'rotate-180' : ''}`}
-                />
-                <span>{replyCount} yanıt</span>
-              </button>
-            )}
-          </div>
+          <button onClick={() => setShowReplyForm(!showReplyForm)} className="flex items-center space-x-1 hover:text-[var(--primary)] transition-colors">
+            <MessageCircle size={14} />
+            <span>Yanıtla</span>
+          </button>
         </div>
 
         {/* Reply Form */}
-        {showReplyForm && level === 0 && (
+        {showReplyForm && (
           <div className="mt-3">
             <ReplyForm
               postId={postId}
               parentCommentId={comment.id}
               replyingTo={comment.userName}
-              onReplyAdded={handleReplyAdded}
+              onReplyAdded={(newReply) => {
+                handleReplyAdded(newReply);
+                setShowReplyForm(false);
+              }}
               onCancel={() => setShowReplyForm(false)}
             />
           </div>
         )}
 
-        {/* Replies */}
-        {level === 0 && showReplies && (
-          <div className="mt-3 space-y-2">
-            {loadingReplies ? (
-              <div className="flex items-center justify-center py-4">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--primary)]"></div>
-                <span className="ml-2 text-xs text-[var(--muted)]">Yanıtlar yükleniyor...</span>
-              </div>
-            ) : (
-              replies.map((reply) => (
-                <div key={reply.id} className="ml-4 pl-3 border-l-2 border-[var(--border)]">
-                  <Comment
-                    comment={reply}
-                    postId={postId}
-                    onCommentDeleted={handleReplyDeleted}
-                    level={1}
-                  />
-                </div>
-              ))
-            )}
+        {/* Replies Section - Only show for main comments */}
+        {!isReply && replyCount > 0 && (
+          <div className="mt-3">
+            <button onClick={handleToggleReplies} className="flex items-center space-x-1 text-xs text-[var(--primary)] font-semibold">
+              <ChevronDown size={14} className={`transition-transform ${showReplies ? 'rotate-180' : ''}`} />
+              <span>
+                {showReplies ? 'Yanıtları gizle' : `${replyCount} yanıtı gör`}
+              </span>
+            </button>
           </div>
         )}
+
+        {/* Show replies */}
+        {showReplies && (
+          <div className="mt-3 space-y-4 ml-8">
+            {loadingReplies && <p className="text-xs text-[var(--muted)]">Yükleniyor...</p>}
+            {replies.map((reply) => (
+              <Comment
+                key={reply.id}
+                comment={reply}
+                postId={postId}
+                onCommentDeleted={() => handleReplyDeleted(reply.id)}
+                isReply={true}
+              />
+            ))}
+          </div>
+        )}
+
       </div>
     </div>
   );

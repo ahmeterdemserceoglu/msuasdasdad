@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
             likes: 0,
             likedBy: [],
             commentCount: 0,
+            likes: 0, // Ensure likes is initialized to 0
             status: 'pending',
             isApproved: false
         };

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useAuth } from '@/app/lib/auth-context';
 import { toast } from 'react-hot-toast';
 import { Comment } from '@/app/types';
+import Image from 'next/image';
 
 interface CommentFormProps {
   postId: string;
@@ -14,11 +15,11 @@ interface CommentFormProps {
 export default function CommentForm({ postId, onCommentAdded }: CommentFormProps) {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { firebaseUser, userData } = useAuth();
+  const { firebaseUser, user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!firebaseUser) {
       toast.error('Yorum yapmak için giriş yapmalısınız');
       return;
@@ -53,7 +54,7 @@ export default function CommentForm({ postId, onCommentAdded }: CommentFormProps
       }
 
       const result = await response.json();
-      
+
       if (result.success && result.comment) {
         toast.success('Yorum başarıyla eklendi');
         setContent('');
@@ -84,15 +85,17 @@ export default function CommentForm({ postId, onCommentAdded }: CommentFormProps
       <div className="flex space-x-3">
         {/* User Avatar */}
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white flex-shrink-0">
-          {userData?.photoURL ? (
-            <img 
-              src={userData.photoURL} 
-              alt={userData.displayName} 
-              className="w-8 h-8 rounded-full object-cover" 
+          {user?.photoURL ? (
+            <Image
+              src={user.photoURL}
+              alt={user.displayName || ''}
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-full object-cover"
             />
           ) : (
             <span className="font-semibold text-sm">
-              {userData?.displayName?.charAt(0).toUpperCase() || 'U'}
+              {user?.displayName?.charAt(0).toUpperCase() || 'U'}
             </span>
           )}
         </div>
@@ -107,12 +110,12 @@ export default function CommentForm({ postId, onCommentAdded }: CommentFormProps
             maxLength={1000}
             disabled={isSubmitting}
           />
-          
+
           <div className="flex justify-between items-center mt-2">
             <span className="text-xs text-[var(--muted)]">
               {content.length}/1000 karakter
             </span>
-            
+
             <button
               type="submit"
               disabled={isSubmitting || !content.trim()}
