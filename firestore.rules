@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Yardımcı Fonksiyonlar
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    function isValidPost() {
+      return request.resource.data.keys().hasAll(['title', 'content', 'interviewType', 'userId', 'createdAt', 'status']) &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() >= 5 &&
+        request.resource.data.title.size() <= 200 &&
+        request.resource.data.content is string &&
+        request.resource.data.content.size() >= 50 &&
+        request.resource.data.content.size() <= 10000 &&
+        request.resource.data.interviewType in ['sozlu', 'spor', 'evrak', 'psikolojik', 'diger'] &&
+        request.resource.data.status in ['pending', 'approved', 'rejected'];
+    }
+
+    // Kullanıcılar koleksiyonu
+    match /users/{userId} {
+      allow read: if isSignedIn();
+
+      allow create: if isOwner(userId) &&
+        request.resource.data.keys().hasAll(['email', 'displayName', 'createdAt']) &&
+        // birthYear varsa 1990-2010 arasında olmalı, yoksa null olabilir (Google girişi için)
+        (!('birthYear' in request.resource.data) || 
+         request.resource.data.birthYear == null ||
+         (request.resource.data.birthYear is number &&
+          request.resource.data.birthYear >= 1990 &&
+          request.resource.data.birthYear <= 2010));
+
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+
+      // Kullanıcı postları alt koleksiyonu
+      match /posts/{postId} {
+        allow read: if isSignedIn();
+        allow create: if isOwner(userId) && isValidPost();
+        allow update: if isOwner(userId) || isAdmin();
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // Paylaşımlar koleksiyonu
+    match /posts/{postId} {
+      allow read: if resource.data.status == 'approved' || isOwner(resource.data.userId) || isAdmin();
+
+      allow create: if isSignedIn() &&
+        isValidPost() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.status == 'pending';
+
+      // Update kuralları:
+      // - Post sahipleri: userId, createdAt ve status hariç alanları güncelleyebilir
+      // - Admin: Tüm alanları güncelleyebilir (status dahil)
+      allow update: if 
+        // Post sahibi ise
+        (isOwner(resource.data.userId) &&
+          // userId değiştirilemez
+          request.resource.data.userId == resource.data.userId &&
+          // createdAt değiştirilemez
+          request.resource.data.createdAt == resource.data.createdAt &&
+          // status değiştirilemez (sadece admin değiştirebilir)
+          request.resource.data.status == resource.data.status
+        ) || 
+        // Admin ise tüm alanları değiştirebilir
+        isAdmin();
+
+      allow delete: if isAdmin();
+
+      // Yorumlar alt koleksiyonu
+      match /comments/{commentId} {
+        allow read: if true;
+
+        allow create: if isSignedIn() &&
+          request.resource.data.keys().hasAll(['content', 'userId', 'createdAt']) &&
+          request.resource.data.content is string &&
+          request.resource.data.content.size() >= 1 &&
+          request.resource.data.content.size() <= 1000 &&
+          request.resource.data.userId == request.auth.uid;
+
+        allow update: if isOwner(resource.data.userId);
+        allow delete: if isOwner(resource.data.userId) || isAdmin();
+      }
+
+      // Beğeniler alt koleksiyonu
+      match /likes/{likeId} {
+        allow read: if true;
+
+        allow create: if isSignedIn() && likeId == (request.auth.uid + '_' + request.resource.data.postId);
+        allow delete: if isSignedIn() && likeId == (request.auth.uid + '_' + resource.data.postId);
+      }
+    }
+
+    // Rehber içerikleri
+    match /guides/{guideId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Bildirimler
+    match /notifications/{userId}/userNotifications/{notificationId} {
+      allow read, update, delete: if isOwner(userId);
+      allow create: if isOwner(userId);
+    }
+
+    // Raporlar
+    match /reports/{reportId} {
+      allow read, update, delete: if isAdmin();
+
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasAll(['postId', 'reporterId', 'reason', 'createdAt']) &&
+        request.resource.data.reason in ['spam', 'inappropriate', 'misleading', 'other'];
+    }
+  }
+}
