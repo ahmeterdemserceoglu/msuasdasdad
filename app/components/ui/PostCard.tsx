@@ -172,7 +172,7 @@ export default function PostCard({
     });
   };
 
-  const truncatedContent = content && content.length > 200 ? content.substring(0, 200) + '...' : content || '';
+  const truncatedContent = content && content.length > 250 ? content.substring(0, 250) + '...' : content || '';
 
   const navigateToPost = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -225,7 +225,7 @@ export default function PostCard({
         <p className="text-[var(--foreground)] leading-relaxed whitespace-pre-wrap">
           {showFullContent ? content : truncatedContent}
         </p>
-        {content && content.length > 200 && (
+        {content && content.length > 250 && (
           <button onClick={(e) => { e.stopPropagation(); setShowFullContent(!showFullContent); }} className="text-[var(--primary)] hover:underline text-sm mt-2">
             {showFullContent ? 'Daha az göster' : 'Devamını oku'}
           </button>
@@ -250,7 +250,6 @@ export default function PostCard({
         <div className="flex items-center space-x-4">
           <button onClick={handleLike} className={`flex items-center space-x-2 p-2 rounded-full transition-colors ${isLiked ? 'text-red-500' : 'text-[var(--muted)] hover:text-red-500'}`}>
             <Heart size={20} className={isLiked ? 'fill-current' : ''} />
-            <span className="text-sm font-medium">{likeCount}</span>
           </button>
           <button onClick={() => setShowComments(!showComments)} className="flex items-center space-x-2 px-3 py-2 rounded-full hover:bg-[var(--card-hover)] text-[var(--muted)] transition-colors">
             <MessageCircle size={20} className={showComments ? 'text-[var(--primary)]' : ''} />
