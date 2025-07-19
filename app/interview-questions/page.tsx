@@ -2,10 +2,25 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, ChevronDown, Hash, BrainCircuit, Swords, Globe, ArrowLeft, User, Shield, Wind, Anchor, BookOpen, Scale, Lightbulb } from 'lucide-react';
+import { Search, ChevronDown, Hash, BrainCircuit, Swords, Globe, ArrowLeft, User, Shield, Wind, Anchor, BookOpen, Scale, Lightbulb, Brain } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const questionsData = [
+  {
+    category: 'MSÜ VE GÜNCEL YÖNETİCİLER',
+    icon: <Shield className="w-5 h-5" />,
+    questions: [
+      { q: "MSÜ rektörü kimdir?", a: "Prof. Dr. Erhan Afyoncu (Kasım 2023'te atandı, halen görevde)." },
+      { q: "KHO dekanı kimdir?", a: "Tuğgeneral Mehmet Nail Yiğit (2024 itibarıyla)." },
+      { q: "HHO dekanı kimdir?", a: "Tuğgeneral Mehmet Şükrü Eken (2024 itibarıyla)." },
+      { q: "DHO dekanı kimdir?", a: "Tuğamiral Cihat Yaycı (2024 itibarıyla)." },
+      { q: "Milli Savunma Bakanı kimdir?", a: "Yaşar Güler (2024 itibarıyla)." },
+      { q: "Genelkurmay Başkanı kimdir?", a: "Orgeneral Metin Gürak (2024 itibarıyla)." },
+      { q: "Kara Kuvvetleri Komutanı kimdir?", a: "Orgeneral Selçuk Bayraktaroğlu (2024 itibarıyla)." },
+      { q: "Hava Kuvvetleri Komutanı kimdir?", a: "Orgeneral Ziya Cemal Kadıoğlu (2024 itibarıyla)." },
+      { q: "Deniz Kuvvetleri Komutanı kimdir?", a: "Oramiral Ercüment Tatlıoğlu (2024 itibarıyla)." },
+    ]
+  },
   {
     category: 'GENEL MÜLAKAT SORULARI',
     icon: <BrainCircuit className="w-5 h-5" />,
@@ -14,20 +29,66 @@ const questionsData = [
       { q: "Korkuların var mı?", a: "Her insan gibi benim de endişelerim var ancak görevimi yerine getirirken veya vatanımı savunurken yaşayacağım hiçbir korkunun, sorumluluklarımın ve kararlılığımın önüne geçmesine izin vermem. En büyük korkum, bana emanet edilen görevi layıkıyla yerine getirememektir." },
       { q: "Üniversiteyi başarıyla bitirebileceğine inanıyor musun?", a: "Evet, kesinlikle inanıyorum. Akademik hedeflerime ulaşmak için gerekli olan azim, disiplin ve çalışma alışkanlıklarına sahibim. Zorluklar karşısında pes etmeyen bir yapım var ve bu eğitimi başarıyla tamamlayacağıma eminim." },
       { q: "Savaş stratejisi kavramını açıklayınız.", a: "Savaş stratejisi, bir savaşta veya askeri harekatta, ulusal hedeflere ulaşmak için askeri, ekonomik, politik ve psikolojik güçlerin bir bütün olarak planlanması ve kullanılması sanatıdır. Sadece muharebe alanını değil, savaşın tüm boyutlarını kapsar." },
-      { q: "Turan taktiği (Hilal Taktiği) hakkında bilgi verebilir misin?", a: "Eski Türk devletleri tarafından sıklıkla kullanılan bir savaş stratejisidir. Ordu, merkez, sağ ve sol kanat olmak üzere üç kısma ayrılır. Savaş sırasında merkez kuvvetleri sahte bir geri çekilme yapar, düşman bu tuzağa çekildiğinde pusuya yatmış olan sağ ve sol kanatlar düşmanı çember içine alarak imha eder." },
+      { q: "Turan taktiği (Hilal Taktiği) nedir?", a: "Merkez çekilir, kanatlar kuşatır. Eski Türk devletleri tarafından sıklıkla kullanılan bir savaş stratejisidir. Ordu, merkez, sağ ve sol kanat olmak üzere üç kısma ayrılır. Savaş sırasında merkez kuvvetleri sahte bir geri çekilme yapar, düşman bu tuzağa çekildiğinde pusuya yatmış olan sağ ve sol kanatlar düşmanı çember içine alarak imha eder." },
     ]
   },
   {
     category: 'KENDİNİ TANITMA REHBERİ',
     icon: <User className="w-5 h-5" />,
     questions: [
-      { 
-        q: "Mülakatta kendimi nasıl etkili bir şekilde tanıtmalıyım?", 
+      {
+        q: "Mülakatta kendimi nasıl etkili bir şekilde tanıtmalıyım?",
         a: "Etkili bir kendini tanıtma, yapılandırılmış ve özgüvenli olmalıdır. Şu adımları izleyebilirsiniz:\n1. **Başlangıç:** Adınız, soyadınız ve memleketinizle başlayın. (Örn: \"Ben Ahmet Yılmaz, Ankara doğumluyum.\")\n2. **Eğitim:** Lise ve (varsa) üniversite bilgilerinizi kısaca belirtin. Alanınızdan ve önemli başarılarınızdan bahsedebilirsiniz.\n3. **Hedef:** Neden burada olduğunuzu net bir şekilde ifade edin. (Örn: \"Hedefim, şanlı Türk ordusunun bir subayı olarak Kara Harp Okulu'nda eğitim almak ve vatanıma hizmet etmektir.\")\n4. **Nitelikler:** Askeri bir kariyere uygun olduğunuzu düşündüğünüz kişisel özelliklerinizi vurgulayın. (Disiplin, liderlik, sorumluluk sahibi olma, fiziksel yeterlilik vb.)\n5. **İlgi Alanları:** Sizi geliştiren ve askeri yaşantıyla uyumlu olabilecek hobilerinizden bahsedin. (Takım sporları, strateji oyunları, kitap okumak, doğa sporları vb.)\n6. **Kapanış:** Teşekkür ederek ve kararlılığınızı belirterek bitirin. (Örn: \"Bu kutsal göreve layık olmak için her türlü zorluğa hazır olduğumu belirtmek isterim.\")"
       },
       { q: "Neden subay olmak istiyorsun?", a: "Bu mesleğin benim için sadece bir iş değil, bir yaşam biçimi olduğunu düşünüyorum. Vatanıma ve milletime hizmet etme arzusu, taşıdığım en büyük idealdir. Türk Silahlı Kuvvetleri'nin şerefli bir üyesi olarak bu ideale ulaşmak istiyorum." },
       { q: "Sizi neden bu okula almalıyız? Diğer adaylardan farkınız ne?", a: "Liderlik vasıflarına sahip, sorumluluk almaktan çekinmeyen, fiziksel ve zihinsel olarak zorluklara hazır biriyim. Takım çalışmasına yatkınım ve verilen görevi en iyi şekilde yerine getirme konusunda kararlıyım. Bu özelliklerimin beni diğer adaylardan ayırdığına ve bu kutsal görev için uygun bir aday yaptığına inanıyorum." },
       { q: "FETÖ'yü üç kelimeyle nasıl tanımlarsınız?", a: "Hain, sinsi ve din istismarcısı bir terör örgütü." },
+    ]
+  },
+  {
+    category: 'PSİKOLOJİK MÜLAKAT SORULARI',
+    icon: <Brain className="w-5 h-5" />,
+    questions: [
+      {
+        q: "Ailenizden ayrı kaldınız mı? Ailenizden ayrı kalabilir misiniz?",
+        a: "**Daha önce ayrı kalanlar için:** Evet, daha önce [eğitim/iş/kurs vb.] nedeniyle ailemden ayrı kaldım. Bu deneyim bana özgüven kazandırdı ve bağımsızlık duygumu geliştirdi. Tabii ki ailemi özledim, ancak bu durumun beni daha güçlü ve sorumlu bir birey yaptığını gördüm. Askeri eğitim için de ailemden ayrı kalmaya hazırım.\n\n**Daha önce ayrı kalmayanlar için:** Hayır, daha önce ailemden uzun süre ayrı kalmadım. Ancak bu durum beni endişelendirmiyor. Aksine, bu yeni deneyimi bir fırsat olarak görüyorum. Ailem de bu kararımı destekliyor ve beni her zaman destekleyeceklerini biliyorum. Vatanıma hizmet etmek için gerekli olan her türlü fedakarlığa hazırım."
+      },
+      {
+        q: "Stresli durumlarla nasıl başa çıkarsınız?",
+        a: "Stresli durumlarla karşılaştığımda öncelikle sakin kalmaya çalışırım. Durumu analiz ederek önceliklerimi belirlerim ve adım adım çözüm üretirim. Nefes egzersizleri yaparım ve pozitif düşünmeye odaklanırım. Gerektiğinde güvendiğim kişilerden tavsiye alırım. Spor yapmak ve müzik dinlemek de stresimi atmama yardımcı olur."
+      },
+      {
+        q: "Başarısızlıkla nasıl başa çıkarsınız?",
+        a: "Başarısızlığı bir son değil, öğrenme fırsatı olarak görürüm. Önce neyi yanlış yaptığımı analiz ederim ve hatalarımdan ders çıkarırım. Kendimi suçlamak yerine, nasıl daha iyi olabileceğime odaklanırım. Motivasyonumu kaybetmem ve daha kararlı bir şekilde tekrar denerim. Her başarısızlık beni hedefe daha yaklaştırır."
+      },
+      {
+        q: "Takım çalışması konusunda kendinizi nasıl değerlendirirsiniz?",
+        a: "Takım çalışmasını çok önemserim ve bu konuda başarılı olduğumu düşünürüm. İyi bir dinleyiciyim, farklı görüşlere saygı duyarım ve ortak hedefe odaklanırım. Gerektiğinde liderlik yaparım, gerektiğinde de takipçi olurum. Çatışma durumlarında arabuluculuk yapar ve çözüm odaklı yaklaşırım. Takımın başarısını kendi başarım olarak görürüm."
+      },
+      {
+        q: "Kendinizde değiştirmek istediğiniz özellikler var mı?",
+        a: "Evet, sürekli kendimi geliştirmeye çalışırım. Bazen aşırı mükemmeliyetçi olabiliyorum, bu da zaman kaybına neden olabiliyor. Bu konuda daha pragmatik olmaya çalışıyorum. Ayrıca sabırsızlık konusunda kendimi geliştirmek istiyorum. Uzun vadeli hedeflere odaklanmayı ve süreçlerin zamanını beklemeyi öğrenmeye çalışıyorum."
+      },
+      {
+        q: "Öfkenizi nasıl kontrol edersiniz?",
+        a: "Öfkelendiğimde önce duraksarım ve derin nefes alırım. Hemen tepki vermek yerine, durumu soğukkanlılıkla değerlendirmeye çalışırım. Öfkemi yapıcı bir şekilde ifade etmeyi öğrendim. Spor yapmak, yürüyüş yapmak gibi fiziksel aktiviteler öfkemi atmama yardımcı olur. Öfkenin geçici bir duygu olduğunu ve kontrol edilebileceğini biliyorum."
+      },
+      {
+        q: "Eleştiriye nasıl tepki verirsiniz?",
+        a: "Yapıcı eleştirileri büyük bir fırsat olarak görürüm. Önce dinlerim, savunmaya geçmek yerine eleştiriyi objektif olarak değerlendiririm. Haklı olan noktaları kabul eder ve kendimi geliştirmek için kullanırım. Eleştiren kişiye teşekkür ederim çünkü beni daha iyi bir insan olmaya yönlendirmiş olur. Yıkıcı eleştirilerde ise sakin kalır ve yapıcı diyalog kurmaya çalışırım."
+      },
+      {
+        q: "Liderlik deneyiminiz var mı? Kendinizi nasıl bir lider olarak görüyorsunuz?",
+        a: "**Deneyimi olanlar için:** Evet, [okul/spor/proje] kapsamında liderlik deneyimim oldu. Bu süreçte takımı motive etmeyi, adil olmayı ve örnek olmayı öğrendim. Demokratik bir liderlik tarzım var, herkesi dinler ve ortak karar alırız.\n\n**Deneyimi olmayanlar için:** Henüz resmi bir liderlik deneyimim olmadı, ancak arkadaş gruplarında doğal olarak öncülük ettiğim durumlar oldu. Kendimi adaletli, anlayışlı ve motive edici bir lider olarak görüyorum. Bu konuda kendimi geliştirmeye açığım."
+      },
+      {
+        q: "Hedeflerinize ulaşmak için neler yaparsınız?",
+        a: "Öncelikle hedeflerimi net bir şekilde belirlerim ve yazılı hale getiririm. Büyük hedefleri küçük adımlara bölerim ve her adım için zaman planı yaparım. Düzenli olarak ilerlemeyi takip ederim ve gerektiğinde planımı revize ederim. Motivasyonumu korumak için küçük başarılarımı kutlarım. Engelleri fırsat olarak görür ve vazgeçmem."
+      },
+      {
+        q: "Karar verme süreciniz nasıldır?",
+        a: "Karar verirken önce mevcut bilgileri toplarım ve durumu detaylı analiz ederim. Alternatifleri listeler, her birinin artı ve eksilerini değerlendiririm. Güvendiğim kişilerden görüş alırım ama son kararı kendim veririm. Acil durumlarda hızlı karar verebilirim, önemli konularda ise daha dikkatli düşünürüm. Aldığım kararların sorumluluğunu üstlenirim."
+      }
     ]
   },
   {
@@ -82,7 +143,30 @@ const questionsData = [
       { q: "Atatürk'ün hayatındaki en önemli dönüm noktaları nelerdir?", a: "19 Mayıs 1919'da Samsun'a çıkışı, Erzurum ve Sivas Kongreleri, 23 Nisan 1920'de TBMM'nin açılması, Başkomutanlık Meydan Muharebesi ve Cumhuriyet'in ilanı en önemli dönüm noktalarıdır." },
       { q: "Milli Mücadele'nin amacı neydi?", a: "Milli Mücadele'nin temel amacı, işgal altındaki vatan topraklarını düşmandan kurtarmak, milletin bağımsızlığını sağlamak ve kayıtsız şartsız egemenliğe dayalı yeni bir Türk devleti kurmaktı." },
       { q: "Lozan Antlaşması'nın Türkiye için önemi nedir?", a: "Lozan Antlaşması, yeni Türk devletinin bağımsızlığının ve egemenliğinin uluslararası alanda tanınmasını sağlayan kurucu bir belgedir. Sevr Antlaşması'nı geçersiz kılmış ve Türkiye Cumhuriyeti'nin bugünkü sınırlarını büyük ölçüde belirlemiştir." },
-      { q: "İzmir'de ilk kurşunu atan kimdir?", a: "15 Mayıs 1919'da İzmir'in işgali sırasında Gazeteci Hasan Tahsin'dir." }
+      { q: "İzmir'de ilk kurşunu atan kimdir?", a: "15 Mayıs 1919'da İzmir'in işgali sırasında Gazeteci Hasan Tahsin'dir." },
+      { q: "Kurtuluş Savaşı'nın fiili başlangıcı ne zamandır?", a: "19 Mayıs 1919 Samsun." },
+      { q: "Lozan Antlaşması ne zaman imzalandı?", a: "24 Temmuz 1923." },
+      { q: "Malazgirt Savaşı'nın yılı ve önemi nedir?", a: "1071 – Anadolu'nun kapısını açtı." },
+      { q: "İstanbul'un fethi hangi yılda gerçekleşti?", a: "1453." },
+      { q: "Çanakkale Deniz Zaferi ne zaman kazanıldı?", a: "18 Mart 1915." },
+      { q: "Sakarya Meydan Muharebesi ne zaman yapıldı?", a: "23 Ağustos – 13 Eylül 1921." },
+      { q: "Büyük Taarruz'un başlangıç yeri neresidir?", a: "Afyon Kocatepe." },
+      { q: "Cumhuriyet'in ilan tarihi nedir?", a: "29 Ekim 1923." },
+      { q: "TBMM'nin açılışı ne zamandır?", a: "23 Nisan 1920." },
+      { q: "Misak-ı Millî sınırlarını 3 yer sayınız.", a: "Trakya, Doğu Anadolu, Batı Anadolu kıyıları." },
+      { q: "Cumhuriyetçilik ilkesi nedir?", a: "Egemenliğin kayıtsız şartsız millete ait olduğu, yönetimin halk tarafından seçilen temsilciler eliyle yürütüldüğü yönetim biçimidir. Saltanat ve hilafet sisteminin yerine geçen modern devlet anlayışıdır." },
+      { q: "Milliyetçilik ilkesi nedir?", a: "Atatürk milliyetçiliği, ırk, din ve mezhep ayrımı yapmayan, Türkiye Cumhuriyeti sınırları içinde yaşayan herkesi Türk milleti olarak kabul eden, barışçı ve insancıl bir milliyetçilik anlayışıdır. 'Yurtta sulh, cihanda sulh' ilkesiyle özetlenir." },
+      { q: "Halkçılık ilkesi nedir?", a: "Toplumda sınıf ayrımının reddedilmesi, halkın yönetime katılması ve sosyal adaleti sağlayan bir ilkedir. Halk egemenliğini ve toplumsal eşitliği öngörür." },
+      { q: "Devletçilik ilkesi nedir?", a: "Devletin ekonomik kalkınmada öncü rol oynaması, özel teşebbüsün yetersiz kaldığı alanlarda devletin ekonomiye müdahale etmesi ilkesidir. Karma ekonomi modelini benimser." },
+      { q: "Laiklik ilkesi nedir?", a: "Din ve devlet işlerinin birbirinden ayrılması, devletin hiçbir dine dayalı olmaması, din ve vicdan özgürlüğünün sağlanması ilkesidir. Devlet, din konusunda tarafsızdır ve tüm dinlere eşit mesafede yaklaşır." },
+      { q: "İnkılapçılık ilkesi nedir?", a: "Toplumsal değişim ve gelişimi sürekli kılma, çağdaş uygarlık seviyesine ulaşma ve bu seviyeyi geçme ilkesidir. Durağanlığa karşı sürekli ilerlemeyi öngörür." },
+      { q: "Egemenlik nedir?", a: "Bir devletin kendi toprakları üzerinde tam bağımsız olarak karar verme ve uygulama yetkisidir. Atatürk'e göre egemenlik kayıtsız şartsız milletindir ve hiçbir kişi, kurum veya sınıfa devredilemez." },
+      { q: "Atatürk'ün yaptığı başlıca inkılaplar nelerdir?", a: "**Siyasi İnkılaplar:** Saltanatın kaldırılması, Cumhuriyet'in ilanı, Halifeliğin kaldırılması. **Hukuki İnkılaplar:** Medeni Kanun, Ceza Kanunu, Ticaret Kanunu. **Eğitim İnkılapları:** Tevhid-i Tedrisat, Harf İnkılabı. **Toplumsal İnkılaplar:** Kıyafet İnkılabı, Kadın hakları, Soyadı Kanunu. **Kültürel İnkılaplar:** Takvim değişikliği, ölçü birimi değişikliği." },
+      { q: "Tevhid-i Tedrisat Kanunu nedir?", a: "3 Mart 1924'te çıkarılan bu kanunla tüm eğitim kurumları Milli Eğitim Bakanlığı'na bağlanmış, eğitimde birlik sağlanmış ve medreseler kapatılmıştır." },
+      { q: "Harf İnkılabı ne zaman yapıldı ve önemi nedir?", a: "1 Kasım 1928'de Arap harfleri yerine Latin harfleri kabul edildi. Bu inkılap okuma-yazma oranını artırmış, Batı kültürüyle bağları güçlendirmiş ve eğitimde modernleşmeyi hızlandırmıştır." },
+      { q: "Medeni Kanun'un önemi nedir?", a: "17 Şubat 1926'da kabul edilen Türk Medeni Kanunu, İsviçre Medeni Kanunu'ndan uyarlanmıştır. Kadın-erkek eşitliğini sağlamış, çok eşliliği kaldırmış, evlilik ve boşanmayı düzenlemiş, modern hukuk sistemini getirmiştir." },
+      { q: "Kıyafet İnkılabı nedir?", a: "25 Kasım 1925'te çıkarılan Şapka Kanunu ile fes ve sarık yasaklanmış, modern Batı kıyafetleri benimsenmiştir. Bu inkılap toplumsal modernleşmenin simgesi olmuştur." },
+      { q: "Soyadı Kanunu ne zaman çıkarıldı?", a: "21 Haziran 1934'te çıkarılan bu kanunla herkesin soyadı alması zorunlu hale getirilmiş, modern kimlik sistemi kurulmuştur. Mustafa Kemal'e 'Atatürk' soyadı verilmiştir." }
     ]
   },
   {
@@ -96,20 +180,35 @@ const questionsData = [
       { q: "Türkiye Büyük Millet Meclisi'nin (TBMM) temel görevleri nelerdir?", a: "Kanun yapmak, değiştirmek ve kaldırmak; bütçeyi görüşmek ve kabul etmek; para basılmasına karar vermek; savaş ilanına karar vermek; uluslararası antlaşmaları onaylamak ve denetim yetkisini kullanmaktır." },
       { q: "Milli Güvenlik Kurulu (MGK) nedir ve kimlerden oluşur?", a: "Cumhurbaşkanı başkanlığında toplanan; Cumhurbaşkanı yardımcıları, Adalet, Milli Savunma, İçişleri, Dışişleri Bakanları, Genelkurmay Başkanı, Kara, Deniz ve Hava Kuvvetleri Komutanlarından oluşan ve milli güvenlik siyasetinin belirlenmesiyle ilgili tavsiye kararları alan bir kuruldur." },
       { q: "NATO'nun kuruluş tarihi nedir?", a: "NATO (Kuzey Atlantik Antlaşması Örgütü), 4 Nisan 1949'da Washington D.C.'de kurulmuştur." },
-      { q: "Türkiye NATO'ya ne zaman üye olmuştur?", a: "Türkiye, Kore Savaşı'na asker göndererek gösterdiği kararlılık ve stratejik konumu sayesinde 18 Şubat 1952'de NATO'ya üye olmuştur." }
+      { q: "Türkiye NATO'ya ne zaman üye olmuştur?", a: "Türkiye, Kore Savaşı'na asker göndererek gösterdiği kararlılık ve stratejik konumu sayesinde 18 Şubat 1952'de NATO'ya üye olmuştur." },
+      { q: "NATO'ya giriş tarihimiz nedir?", a: "18 Şubat 1952." },
+      { q: "Anayasa'nın ilk 4 maddesi değiştirilebilir mi?", a: "Hayır, Anayasa'nın ilk 4 maddesi değiştirilemez ve değiştirilmesi teklif dahi edilemez." }
     ]
   },
   {
     category: 'GENEL KÜLTÜR VE MANTIK',
     icon: <Lightbulb className="w-5 h-5" />,
     questions: [
-        { q: "Türkiye'nin komşularını sayınız.", a: "Türkiye'nin 8 sınır komşusu vardır: Kuzeybatıda Bulgaristan ve Yunanistan; kuzeydoğuda Gürcistan; doğuda Ermenistan, Azerbaycan'a bağlı Nahçıvan Özerk Cumhuriyeti ve İran; güneyde ise Irak ve Suriye." },
-        { q: "4 bölgeye sınırı olan ilimiz hangisidir?", a: "Bilecik. Marmara, İç Anadolu, Ege ve Karadeniz bölgelerinin dördüne de sınırı olan tek ilimizdir." },
-        { q: "Miladi takvimin başlangıcı hangi olayı esas alır?", a: "Miladi takvim, Hz. İsa'nın doğumunu başlangıç (0 veya 1. yıl) olarak kabul eder." },
-        { q: "Türkiye'nin coğrafi konumu hakkında ne biliyorsunuz?", a: "Türkiye, Asya ve Avrupa kıtalarını birleştiren stratejik bir konuma sahiptir. Üç tarafı denizlerle (Karadeniz, Ege, Akdeniz) çevrilidir. Komşuları Yunanistan, Bulgaristan, Gürcistan, Ermenistan, Nahçıvan (Azerbaycan), İran, Irak ve Suriye'dir." },
-        { q: "Bir lider ile yönetici arasındaki temel fark nedir?", a: "Yönetici, mevcut düzeni ve kuralları uygulayarak işlerin doğru yapılmasını sağlar. Lider ise vizyon belirler, ilham verir ve insanları hedefe doğru motive ederek doğru işlerin yapılmasını sağlar. Liderlik, yöneticilikten daha geniş bir kavramdır." },
-        { q: "S.O.S. neyin kısaltmasıdır ve ne anlama gelir?", a: "S.O.S. aslında bir kısaltma değildir. Mors alfabesinde kolayca ve belirgin bir şekilde gönderilebilen bir tehlike sinyalidir (...---...). Uluslararası bir acil durum sinyali olarak kabul edilir." },
-        { q: "Türkiye'nin en büyük üç sorununu sayınız.", a: "Bu kişisel bir yorum sorusudur. Cevap verirken yapıcı olmak önemlidir. Örnek: Terörle mücadele, ekonomik istikrarsızlık ve dış politika sınamaları olarak sıralayabilirim. Ancak devletimiz bu sorunların üstesinden gelecek güce ve kararlılığa sahiptir." },
+      { q: "Türkiye'nin komşularını sayınız.", a: "Türkiye'nin 8 sınır komşusu vardır: Kuzeybatıda Bulgaristan ve Yunanistan; kuzeydoğuda Gürcistan; doğuda Ermenistan, Azerbaycan'a bağlı Nahçıvan Özerk Cumhuriyeti ve İran; güneyde ise Irak ve Suriye." },
+      { q: "4 bölgeye sınırı olan ilimiz hangisidir?", a: "Bilecik. Marmara, İç Anadolu, Ege ve Karadeniz bölgelerinin dördüne de sınırı olan tek ilimizdir." },
+      { q: "8 kara komşumuz hangileridir?", a: "Yunanistan, Bulgaristan, Gürcistan, Ermenistan, Nahçıvan, İran, Irak, Suriye." },
+      { q: "3 çevre denizimiz hangileridir?", a: "Karadeniz, Ege, Akdeniz." },
+      { q: "En uzun nehrimiz hangisidir?", a: "Kızılırmak." },
+      { q: "En yüksek dağımız hangisidir?", a: "Ağrı Dağı (5137 m)." },
+      { q: "Başkentimiz neresidir?", a: "Ankara." },
+      { q: "En büyük yüzölçümlü ilimiz hangisidir?", a: "Konya." },
+      { q: "En kalabalık ilimiz hangisidir?", a: "İstanbul." },
+      { q: "En büyük adamız hangisidir?", a: "Gökçeada." },
+      { q: "En büyük gölümüz hangisidir?", a: "Van Gölü." },
+      { q: "En büyük barajımız hangisidir?", a: "Atatürk Barajı." },
+      { q: "En büyük havalimanımız hangisidir?", a: "İstanbul Havalimanı." },
+      { q: "En büyük limanımız hangisidir?", a: "Ambarlı Limanı." },
+      { q: "En büyük köprümüz hangisidir?", a: "1915 Çanakkale Köprüsü." },
+      { q: "Miladi takvimin başlangıcı hangi olayı esas alır?", a: "Miladi takvim, Hz. İsa'nın doğumunu başlangıç (0 veya 1. yıl) olarak kabul eder." },
+      { q: "Türkiye'nin coğrafi konumu hakkında ne biliyorsunuz?", a: "Türkiye, Asya ve Avrupa kıtalarını birleştiren stratejik bir konuma sahiptir. Üç tarafı denizlerle (Karadeniz, Ege, Akdeniz) çevrilidir. Komşuları Yunanistan, Bulgaristan, Gürcistan, Ermenistan, Nahçıvan (Azerbaycan), İran, Irak ve Suriye'dir." },
+      { q: "Bir lider ile yönetici arasındaki temel fark nedir?", a: "Yönetici, mevcut düzeni ve kuralları uygulayarak işlerin doğru yapılmasını sağlar. Lider ise vizyon belirler, ilham verir ve insanları hedefe doğru motive ederek doğru işlerin yapılmasını sağlar. Liderlik, yöneticilikten daha geniş bir kavramdır." },
+      { q: "S.O.S. neyin kısaltmasıdır ve ne anlama gelir?", a: "S.O.S. aslında bir kısaltma değildir. Mors alfabesinde kolayca ve belirgin bir şekilde gönderilebilen bir tehlike sinyalidir (...---...). Uluslararası bir acil durum sinyali olarak kabul edilir." },
+      { q: "Türkiye'nin en büyük üç sorununu sayınız.", a: "Bu kişisel bir yorum sorusudur. Cevap verirken yapıcı olmak önemlidir. Örnek: Terörle mücadele, ekonomik istikrarsızlık ve dış politika sınamaları olarak sıralayabilirim. Ancak devletimiz bu sorunların üstesinden gelecek güce ve kararlılığa sahiptir." },
     ]
   },
   {
@@ -119,18 +218,25 @@ const questionsData = [
       { q: "Ukrayna-Rusya Savaşının Nedenleri ve Özeti", a: "**Başlangıç:** 24 Şubat 2022. **Temel Nedenler:** NATO'nun doğuya doğru genişleme politikası, Ukrayna'nın Batı ile yakınlaşması, Rusya'nın Kırım'ı ilhakı (2014) ve Donbas bölgesindeki ayrılıkçı hareketlere verdiği destek, Rusya'nın Karadeniz'deki stratejik çıkarları. **Özet:** Rusya, Ukrayna'nın NATO'ya girmesini engellemek ve kendi etki alanını korumak amacıyla özel bir askeri operasyon başlattı. Savaş, konvansiyonel ve hibrit savaş taktikleriyle devam etmekte olup, küresel enerji ve gıda krizlerine yol açmıştır." },
       { q: "Suriye İç Savaşı'nın Nedenleri ve Özeti", a: "**Başlangıç:** 2011. **Temel Nedenler:** Arap Baharı'nın etkisiyle başlayan barışçıl gösterilerin Esad rejimi tarafından şiddetle bastırılması, etnik ve mezhepsel gerilimler, dış güçlerin müdahalesi. **Özet:** Savaş, rejim, muhalifler, terör örgütleri (IŞİD, YPG/PKK) ve uluslararası aktörlerin (Rusya, ABD, Türkiye, İran) dahil olduğu çok katmanlı bir vekalet savaşına dönüşmüştür. Türkiye, sınır güvenliğini sağlamak ve terör koridorunu engellemek için operasyonlar düzenlemiştir." },
       { q: "İsrail-Filistin Çatışmasının Kökeni ve Güncel Durum", a: "**Kökeni:** 20. yüzyılın başlarına, Siyonist hareketin Filistin'de bir Yahudi devleti kurma hedefine ve 1948'de İsrail'in kurulmasına dayanır. **Temel Nedenler:** Toprak anlaşmazlığı, Kudüs'ün statüsü, Filistinli mülteciler sorunu ve yasa dışı Yahudi yerleşim yerleri. **Özet:** Yıllardır devam eden çatışma, son olarak Hamas'ın 7 Ekim 2023'teki saldırısı ve İsrail'in Gazze'ye yönelik başlattığı yoğun askeri operasyonlarla yeniden alevlenmiştir. Çatışma, büyük bir insani krize yol açmıştır." },
+      { q: "Kıbrıs Barış Harekâtı'nın parolası neydi?", a: "Ayşe tatile çıksın." },
+      { q: "Barış Pınarı harekât bölgesi neresidir?", a: "Tel-Abyad / Rasulayn." },
+      { q: "Pençe serisinin son harekâtı (2024) hangisidir?", a: "Pençe-Kilit." },
+      { q: "KAFKAS KAPLANI-2024 harekâtının hedefi neydi?", a: "PKK üst düzey yönetimi." },
+      { q: "Mavi Vatan tatbikatına kaç ülke gözlemci katıldı?", a: "8 ülke." },
+      { q: "15 Temmuz'un sembol isimleri kimlerdir?", a: "Ömer Halisdemir – Şehit Astsubay Ömer Halisdemir." },
+      { q: "FETÖ'yü üç kelimeyle tanımlayınız.", a: "Hain – Sinsi – Din istismarcısı." }
     ]
   },
   {
     category: 'ÇEŞİTLİ MÜLAKAT SORULARI',
     icon: <Globe className="w-5 h-5" />,
     questions: [
-        { q: "Kıta sahanlığı nedir?", a: "Bir devletin kara sularının bittiği yerden başlayan ve denizin jeolojik olarak kıta uzantısının devam ettiği, o devlete deniz yatağı ve altındaki kaynakları araştırma ve işletme hakkı veren alandır. Türkiye'nin Ege Denizi'ndeki kıta sahanlığı Yunanistan ile temel anlaşmazlık konularından biridir." },
-        { q: "Türkiye'nin önemli doğalgaz ve petrol boru hatları nelerdir?", a: "Türkiye, bir enerji koridorudur. Başlıca hatlar: Bakü-Tiflis-Ceyhan (BTC) Petrol Boru Hattı, TANAP (Trans-Anadolu Doğal Gaz Boru Hattı), TürkAkım ve Mavi Akım Doğal Gaz Boru Hatları." },
-        { q: "Türkiye'nin geliştirdiği insansız hava araçları (İHA/SİHA) nelerdir?", a: "Bayraktar TB2, Bayraktar Akıncı, TUSAŞ Anka, TUSAŞ Aksungur, Bayraktar Kızılelma (MİUS) ve Vestel Karayel gibi yerli ve milli üretim birçok İHA/SİHA bulunmaktadır." },
-        { q: "Büyük Ortadoğu Projesi (BOP) nedir?", a: "ABD tarafından 21. yüzyılın başlarında ortaya atılan, Ortadoğu ve çevresindeki ülkelerin siyasi ve ekonomik yapılarının dönüştürülmesini hedefleyen bir projedir. Genellikle bölgeyi istikrarsızlaştırdığı yönünde eleştirilir." },
-        { q: "3 tane terör örgütü sayar mısınız?", a: "PKK/KCK/YPG, FETÖ (Fethullahçı Terör Örgütü) ve DEAŞ (IŞİD)." },
-        { q: "Ünlü Türk denizcileri kimlerdir?", a: "Piri Reis, Barbaros Hayreddin Paşa, Turgut Reis, Seydi Ali Reis ve Çaka Bey gibi tarihimizde önemli izler bırakmış birçok büyük Türk denizcisi vardır." }
+      { q: "Kıta sahanlığı nedir?", a: "Bir devletin kara sularının bittiği yerden başlayan ve denizin jeolojik olarak kıta uzantısının devam ettiği, o devlete deniz yatağı ve altındaki kaynakları araştırma ve işletme hakkı veren alandır. Türkiye'nin Ege Denizi'ndeki kıta sahanlığı Yunanistan ile temel anlaşmazlık konularından biridir." },
+      { q: "Türkiye'nin önemli doğalgaz ve petrol boru hatları nelerdir?", a: "Türkiye, bir enerji koridorudur. Başlıca hatlar: Bakü-Tiflis-Ceyhan (BTC) Petrol Boru Hattı, TANAP (Trans-Anadolu Doğal Gaz Boru Hattı), TürkAkım ve Mavi Akım Doğal Gaz Boru Hatları." },
+      { q: "Türkiye'nin geliştirdiği insansız hava araçları (İHA/SİHA) nelerdir?", a: "Bayraktar TB2, Bayraktar Akıncı, TUSAŞ Anka, TUSAŞ Aksungur, Bayraktar Kızılelma (MİUS) ve Vestel Karayel gibi yerli ve milli üretim birçok İHA/SİHA bulunmaktadır." },
+      { q: "Büyük Ortadoğu Projesi (BOP) nedir?", a: "ABD tarafından 21. yüzyılın başlarında ortaya atılan, Ortadoğu ve çevresindeki ülkelerin siyasi ve ekonomik yapılarının dönüştürülmesini hedefleyen bir projedir. Genellikle bölgeyi istikrarsızlaştırdığı yönünde eleştirilir." },
+      { q: "3 tane terör örgütü sayar mısınız?", a: "PKK/KCK/YPG, FETÖ (Fethullahçı Terör Örgütü) ve DEAŞ (IŞİD)." },
+      { q: "Ünlü Türk denizcileri kimlerdir?", a: "Piri Reis, Barbaros Hayreddin Paşa, Turgut Reis, Seydi Ali Reis ve Çaka Bey gibi tarihimizde önemli izler bırakmış birçok büyük Türk denizcisi vardır." }
     ]
   }
 ];
@@ -209,24 +315,24 @@ export default function InterviewQuestionsPage() {
           {/* Sol Yan Menü - Kategoriler */}
           <aside className="lg:w-1/4 lg:sticky lg:top-8 self-start">
             <div className="mb-6 pb-6 border-b border-slate-800">
-                <Link href="/" className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
-                    <ArrowLeft size={20} />
-                    <span className="font-medium">Ana Sayfaya Dön</span>
-                </Link>
+              <Link href="/" className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                <ArrowLeft size={20} />
+                <span className="font-medium">Ana Sayfaya Dön</span>
+              </Link>
             </div>
-            <h2 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2"><Hash className="w-5 h-5 text-blue-500"/> Kategoriler</h2>
+            <h2 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2"><Hash className="w-5 h-5 text-blue-500" /> Kategoriler</h2>
             <div className="space-y-2">
-              <button 
+              <button
                 onClick={() => setSelectedCategory('all')}
                 className={`w-full text-left px-4 py-2.5 rounded-lg transition-colors flex items-center gap-3 ${selectedCategory === 'all' ? 'bg-blue-600/90 text-white shadow-lg' : 'hover:bg-slate-800'}`}>
-                  <Globe className="w-5 h-5" /> Tümü
+                <Globe className="w-5 h-5" /> Tümü
               </button>
               {questionsData.map(cat => (
-                <button 
+                <button
                   key={cat.category}
                   onClick={() => setSelectedCategory(cat.category)}
                   className={`w-full text-left px-4 py-2.5 rounded-lg transition-colors flex items-center gap-3 ${selectedCategory === cat.category ? 'bg-blue-600/90 text-white shadow-lg' : 'hover:bg-slate-800'}`}>
-                    {cat.icon} {cat.category}
+                  {cat.icon} {cat.category}
                 </button>
               ))}
             </div>
@@ -258,7 +364,7 @@ export default function InterviewQuestionsPage() {
                     )}
                     <div>
                       {group.questions.map((item, index) => (
-                        <AccordionItem 
+                        <AccordionItem
                           key={index}
                           question={item.q}
                           answer={item.a}
